@@ -1,0 +1,81 @@
+# ── Claude / Cowork ───────────────────────────────────────────
+.claude/
+.cowork/
+claude_outputs/
+cowork_outputs/
+
+# ── Java / Maven ──────────────────────────────────────────────
+backend/target/
+*.class
+*.jar
+*.war
+*.ear
+*.nar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# Maven wrapper cache
+.mvn/repository/
+backend/.mvn/wrapper/maven-wrapper.jar
+
+# ── Spring Boot ───────────────────────────────────────────────
+# Perfil de producción (contiene secretos)
+backend/src/main/resources/application-prod.properties
+
+# ── Variables de entorno ──────────────────────────────────────
+.env
+.env.*
+*.env
+
+# ── IDEs ──────────────────────────────────────────────────────
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+
+# Eclipse
+.classpath
+.project
+.settings/
+bin/
+
+# VS Code
+.vscode/
+
+# NetBeans
+nbproject/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# ── Sistema operativo ─────────────────────────────────────────
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+
+# ── Frontend ──────────────────────────────────────────────────
+node_modules/
+
+# ── Docker ────────────────────────────────────────────────────
+# Datos persistentes de contenedores locales
+infra/postgres-data/
+*.sql.bak
+
+# ── Logs ──────────────────────────────────────────────────────
+*.log
+logs/
+
+# ── Temporales ────────────────────────────────────────────────
+test_tmp/
+*.tmp
+*.bak
+*.swp

@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestionar Administradores – DUNAB</title>
+  
+  <script>
+    (function(){
+      try {
+        var u = JSON.parse(localStorage.getItem('dunab_user')||'null');
+        var t = (u && u.temaPreferencia) || localStorage.getItem('dunab_theme') || 'CLARO';
+        if (t === 'OSCURO') document.documentElement.setAttribute('data-theme','dark');
+      } catch(e){}
+    })();
+  </script>
+  <link rel="stylesheet" href="css/dunab-theme.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+
+            body { padding:20px 24px; }
+    .form-row { display:flex; gap:12px; margin-bottom:14px; }
+    .form-field { flex:1; }
+    .form-field label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:5px; }
+    .form-field input, .form-field select {
+      width:100%; height:38px; border:1px solid var(--border); border-radius:8px;
+      padding:0 12px; font-size:13.5px; color:var(--text-primary);
+      background:var(--body-bg); outline:none; transition:border .15s;
+    }
+    .form-field input:focus, .form-field select:focus { border-color:var(--unab-red); }
+    .modal-footer {
+      padding:14px 24px; border-top:1px solid var(--border);
+      display:flex; justify-content:flex-end; gap:10px;
+    }
+    .btn-mcancel {
+      padding:9px 18px; border-radius:10px; border:1px solid var(--border);
+      background:var(--card-bg); color:var(--text-secondary);
+      font-size:13.5px; font-weight:600; cursor:pointer;
+    }
+    .btn-msave {
+      padding:9px 18px; border-radius:10px; border:none;
+      background:var(--unab-red); color:#fff;
+      font-size:13.5px; font-weight:600; cursor:pointer; transition:background .15s;
+    }
+    .btn-msave:hover { background:var(--unab-red-dark); }
+
+    /* ─── TOAST ────────────────────────────────── */
+    @keyframes slideInToast { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+  
+</style>
+</head>
+<body>
+
+<!-- ════ SIDEBAR ════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo" data-auto-logo></div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+    <a class="nav-item" href="encuentros.html"><span class="nav-icon">📅</span><span>Encuentros</span></a>
+    <a class="nav-item" href="ranking.html"><span class="nav-icon">🏆</span><span>Ranking</span></a>
+    <a class="nav-item" href="historial.html"><span class="nav-icon">⏱</span><span>Historial</span></a>
+    <a class="nav-item" href="transferencias.html"><span class="nav-icon">⇄</span><span>Transferencias</span></a>
+    <a class="nav-item" href="feed.html"><span class="nav-icon">📣</span><span>Feed</span></a>
+    <a class="nav-item" href="tienda.html"><span class="nav-icon">🛍️</span><span>Tienda</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEstudiantes" href="gestionar-estudiantes.html"><span class="nav-icon">🎓</span><span>Gestionar Estudiantes</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEncuentros" href="gestionar-encuentros.html"><span class="nav-icon">⚙</span><span>Gestionar Encuentros</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarRecompensas" href="gestionar-recompensas.html"><span class="nav-icon">🎁</span><span>Gestionar Tienda</span></a>
+    <a class="nav-item nav-item-super active" id="navGestionarAdmins" href="gestionar-admins.html"><span class="nav-icon">🛡</span><span>Gestionar Admins</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <a class="nav-item" href="perfil.html"><span class="nav-icon">👤</span><span>Perfil</span></a>
+  </div>
+</aside>
+
+<!-- ════ MAIN ════ -->
+<div class="main">
+  <header class="topnav">
+  <div class="search-wrap">
+    <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" placeholder="Buscar encuentros, estudiantes…" id="topSearch"/>
+  </div>
+  <div class="topnav-right">
+    <div class="user-chip-wrap">
+      <div class="user-chip" id="userChipBtn">
+        <div class="user-meta">
+          <span class="user-meta-label" data-user-faculty>Facultad de Ciencias Jurídicas y Políticas</span>
+          <span class="user-meta-name" id="topUserName" data-user-name>Usuario</span>
+        </div>
+        <div class="user-avatar" id="topAvatar" data-user-avatar>U</div>
+      </div>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="dropdown-header">
+          <div class="d-name" id="dropName" data-user-name>Usuario</div>
+          <div class="d-role" id="dropRole" data-user-role>Estudiante</div>
+        </div>
+        <a class="dropdown-item" href="perfil.html">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Mi Perfil
+        </a>
+        <a class="dropdown-item" href="historial.html">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z"/><path d="M12 8v4l3 3"/></svg>
+          Historial
+        </a>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item danger" id="dropLogout" data-logout>
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Cerrar sesión
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Gestionar Administradores</div>
+        <div class="page-sub">Solo el superadmin puede crear y gestionar cuentas de administrador.</div>
+      </div>
+      <button class="btn-primary" onclick="openModal()">
+        <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M12 4v16m8-8H4"/></svg>
+        Nuevo Administrador
+      </button>
+      <button class="btn-primary" style="background:#D97706" onclick="openAcreditarModal(null)">
+        💰 Acreditarme DUNAB
+      </button>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-strip">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#EDE9FE">🛡️</div>
+        <div>
+          <div class="stat-val" id="statTotal">—</div>
+          <div class="stat-lbl">Total Admins</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#D1FAE5">✅</div>
+        <div>
+          <div class="stat-val" id="statActivos">—</div>
+          <div class="stat-lbl">Activos</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FEE2E2">🔒</div>
+        <div>
+          <div class="stat-val" id="statInactivos">—</div>
+          <div class="stat-lbl">Inactivos</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Administradores del Sistema</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Administrador</th>
+            <th>Rol</th>
+            <th>Estado</th>
+            <th>Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-light)">⏳ Cargando...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL CREAR ADMIN ════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">Nuevo Administrador</span>
+      <span class="modal-close" onclick="closeModal()">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-field">
+          <label>Nombre completo *</label>
+          <input type="text" id="fNombre" placeholder="Ej. Carlos Martínez"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Correo institucional *</label>
+          <input type="email" id="fCorreo" placeholder="admin@unab.edu.co"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Contraseña *</label>
+          <input type="password" id="fContrasena" placeholder="Mínimo 8 caracteres"/>
+        </div>
+        <div class="form-field">
+          <label>Código de empleado *</label>
+          <input type="text" id="fCodigo" placeholder="Ej. ADM-001"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Celular</label>
+          <input type="text" id="fCelular" placeholder="+57 300 000 0000"/>
+        </div>
+        <div class="form-field">
+          <label>Cédula</label>
+          <input type="text" id="fCedula" placeholder="123456789"/>
+        </div>
+      </div>
+      <p style="font-size:12px;color:var(--text-light);margin-top:4px">
+        ℹ️ El administrador creado tendrá rol <strong>ADMIN</strong> y podrá gestionar encuentros pero no crear otros admins.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-mcancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-msave" onclick="crearAdmin()">Crear Administrador</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL ACREDITAR DUNAB ════ -->
+<div class="modal-overlay" id="acreditarOverlay">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title" id="acreditarTitulo">💰 Acreditar DUNAB</span>
+      <span class="modal-close" onclick="closeAcreditarModal()">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="form-row">
+        <div class="form-field">
+          <label>Cantidad de DUNAB a acreditar *</label>
+          <input type="number" id="aCantidad" placeholder="Ej. 500" min="1" max="10000"/>
+        </div>
+      </div>
+      <div id="acreditarTarget" style="font-size:13px;color:var(--text-secondary);margin-top:4px"></div>
+      <p style="font-size:12px;color:var(--text-light);margin-top:8px">
+        ℹ️ Máximo <strong>10 000 DUNAB</strong> por operación. El saldo se acredita de inmediato.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-mcancel" onclick="closeAcreditarModal()">Cancelar</button>
+      <button class="btn-msave" style="background:#D97706" onclick="ejecutarAcreditar()">💰 Acreditar</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/theme.js"></script>
+<script>
+// ── GUARD: solo SUPERADMIN ───────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = Auth.getUser();
+  if (!user) { Auth.logout(); return; }
+  if (user.rol !== 'SUPERADMIN') {
+    showToast('Acceso restringido al superadministrador.', 'error');
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+    return;
+  }
+
+  // Topnav
+  const initiales = user.nombre ? user.nombre.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase() : 'SA';
+  const av = document.getElementById('topAvatar');
+  const tn = document.getElementById('topUserName');
+  const dn = document.getElementById('dropName');
+  const dr = document.getElementById('dropRole');
+  if (av) av.textContent = initiales;
+  if (tn) tn.textContent = user.nombre || 'Superadmin';
+  if (dn) dn.textContent = user.nombre || '—';
+  if (dr) dr.textContent = 'Superadministrador';
+
+  await cargarAdmins();
+});
+
+// ── CARGAR LISTA ─────────────────────────────────────────────────────────────
+let admins = [];
+
+async function cargarAdmins() {
+  try {
+    admins = await UsuarioAPI.listarAdmins();
+    renderTabla();
+    actualizarStats();
+  } catch (err) {
+    document.getElementById('tableBody').innerHTML =
+      `<tr><td colspan="4" style="text-align:center;padding:40px;color:#EF4444">⚠️ ${err.message || 'Error cargando administradores.'}</td></tr>`;
+  }
+}
+
+function renderTabla() {
+  const tbody = document.getElementById('tableBody');
+  if (!admins.length) {
+    tbody.innerHTML = `<tr><td colspan="4"><div class="empty-state"><div class="empty-icon">🛡️</div><div>No hay administradores registrados.</div></div></td></tr>`;
+    return;
+  }
+
+  const currentUser = Auth.getUser();
+
+  tbody.innerHTML = admins.map(a => {
+    const iniciales = a.nombre.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    const rolClass  = a.rol === 'SUPERADMIN' ? 'superadmin' : 'admin';
+    const rolLabel  = a.rol === 'SUPERADMIN' ? '⭐ Superadmin' : '🛡️ Admin';
+    const activo    = a.activo !== false;
+    const esYo      = currentUser && currentUser.id === a.id;
+
+    return `<tr>
+      <td>
+        <div class="admin-name-cell">
+          <div class="admin-avatar" style="background:${a.rol==='SUPERADMIN'?'#D97706':'#8C1D40'}">${iniciales}</div>
+          <div>
+            <div class="admin-name">${a.nombre} ${esYo ? '<span style="font-size:11px;color:var(--text-light)">(tú)</span>' : ''}</div>
+            <div class="admin-correo">${a.correo}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="rol-chip ${rolClass}">${rolLabel}</span></td>
+      <td>
+        <span class="status-dot ${activo?'active':'inactive'}"></span>
+        <span style="font-size:13px;color:${activo?'var(--green-dark)':'var(--text-light)'}">${activo?'Activo':'Inactivo'}</span>
+      </td>
+      <td style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+        <button class="toggle-btn" style="background:#FEF3C7;color:#92400E;border-color:#F59E0B"
+          onclick="openAcreditarModal(${a.id}, '${a.nombre.replace(/'/g,"\\'")}')">
+          💰 Acreditar
+        </button>
+        ${esYo || a.rol === 'SUPERADMIN' ? '' :
+          `<button class="toggle-btn ${activo?'deactivate':''}" onclick="toggleAdmin(${a.id}, ${activo})">
+            ${activo ? '🔒 Desactivar' : '🔓 Activar'}
+           </button>`}
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function actualizarStats() {
+  const total    = admins.length;
+  const activos  = admins.filter(a => a.activo !== false).length;
+  const inactivos = total - activos;
+  document.getElementById('statTotal').textContent    = total;
+  document.getElementById('statActivos').textContent  = activos;
+  document.getElementById('statInactivos').textContent = inactivos;
+}
+
+// ── TOGGLE ACTIVO ─────────────────────────────────────────────────────────────
+async function toggleAdmin(id, estaActivo) {
+  const a = admins.find(x => x.id === id);
+  const nombre = a ? a.nombre : 'el administrador';
+  if (!confirm(`¿${estaActivo ? 'Desactivar' : 'Activar'} la cuenta de ${nombre}?`)) return;
+  try {
+    await UsuarioAPI.toggleActivo(id);
+    showToast(`Cuenta de ${nombre} ${estaActivo ? 'desactivada' : 'activada'}.`, estaActivo ? 'warning' : 'success');
+    await cargarAdmins();
+  } catch (err) {
+    showToast(err.message || 'Error al cambiar estado.', 'error');
+  }
+}
+
+// ── MODAL CREAR ───────────────────────────────────────────────────────────────
+function openModal() {
+  document.getElementById('fNombre').value = '';
+  document.getElementById('fCorreo').value = '';
+  document.getElementById('fContrasena').value = '';
+  document.getElementById('fCodigo').value = '';
+  document.getElementById('fCelular').value = '';
+  document.getElementById('fCedula').value = '';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+async function crearAdmin() {
+  const nombre    = document.getElementById('fNombre').value.trim();
+  const correo    = document.getElementById('fCorreo').value.trim();
+  const contrasena = document.getElementById('fContrasena').value;
+  const codigo    = document.getElementById('fCodigo').value.trim();
+  const celular   = document.getElementById('fCelular').value.trim();
+  const cedula    = document.getElementById('fCedula').value.trim();
+
+  if (!nombre || !correo || !contrasena || !codigo) {
+    showToast('Completa nombre, correo, contraseña y código.', 'error');
+    return;
+  }
+
+  const payload = { nombre, correo, contrasena, codigo, celular: celular||null, cedula: cedula||null };
+
+  try {
+    await UsuarioAPI.crearAdmin(payload);
+    showToast(`Administrador "${nombre}" creado exitosamente.`, 'success');
+    closeModal();
+    await cargarAdmins();
+  } catch (err) {
+    showToast(err.message || 'Error al crear administrador.', 'error');
+  }
+}
+
+// ── DROPDOWN ──────────────────────────────────────────────────────────────────
+(function initDropdown() {
+  const btn  = document.getElementById('userChipBtn');
+  const drop = document.getElementById('userDropdown');
+  if (!btn || !drop) return;
+  btn.addEventListener('click', e => { e.stopPropagation(); drop.classList.toggle('open'); });
+  document.addEventListener('click', () => drop.classList.remove('open'));
+  const logoutBtn = document.getElementById('dropLogout');
+  if (logoutBtn) logoutBtn.addEventListener('click', () => Auth.logout());
+})();
+
+// Cerrar modales con clic fuera
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+document.getElementById('acreditarOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('acreditarOverlay')) closeAcreditarModal();
+});
+
+// ── MODAL ACREDITAR DUNAB ─────────────────────────────────────────────────────
+let _acreditarTargetId = null; // null = auto-acreditar, número = acreditar a ese usuario
+
+function openAcreditarModal(userId, nombre) {
+  _acreditarTargetId = userId || null;
+  document.getElementById('aCantidad').value = '';
+  const tituloEl  = document.getElementById('acreditarTitulo');
+  const targetEl  = document.getElementById('acreditarTarget');
+  if (userId) {
+    tituloEl.textContent = '💰 Acreditar DUNAB a admin';
+    targetEl.textContent = `Destinatario: ${nombre}`;
+  } else {
+    tituloEl.textContent = '💰 Acreditarme DUNAB';
+    targetEl.textContent = 'Se acreditará a tu propia cuenta.';
+  }
+  document.getElementById('acreditarOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('aCantidad').focus(), 100);
+}
+
+function closeAcreditarModal() {
+  document.getElementById('acreditarOverlay').classList.remove('open');
+  _acreditarTargetId = null;
+}
+
+async function ejecutarAcreditar() {
+  const cantidad = parseInt(document.getElementById('aCantidad').value) || 0;
+  if (cantidad < 1 || cantidad > 10000) {
+    showToast('Ingresa una cantidad entre 1 y 10 000 DUNAB.', 'error');
+    return;
+  }
+  try {
+    let resultado;
+    if (_acreditarTargetId) {
+      resultado = await UsuarioAPI.acreditarUsuario(_acreditarTargetId, cantidad);
+      showToast(`${cantidad.toLocaleString('es-CO')} DUNAB acreditados a ${resultado.nombre}.`, 'success');
+    } else {
+      resultado = await UsuarioAPI.acreditarMe(cantidad);
+      // Actualizar sesión local con el nuevo balance
+      Auth.setUser({ ...Auth.getUser(), balanceDunab: resultado.balanceDunab });
+      showToast(`${cantidad.toLocaleString('es-CO')} DUNAB acreditados a tu cuenta. Nuevo saldo: ${resultado.balanceDunab.toLocaleString('es-CO')} D.`, 'success');
+    }
+    closeAcreditarModal();
+    await cargarAdmins();
+  } catch (err) {
+    showToast(err.message || 'Error al acreditar DUNAB.', 'error');
+  }
+}
+</script>
+</body>
+</html>

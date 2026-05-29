@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Gestionar Estudiantes – DUNAB</title>
+  
+  <script>
+    (function(){
+      try {
+        var u = JSON.parse(localStorage.getItem('dunab_user')||'null');
+        var t = (u && u.temaPreferencia) || localStorage.getItem('dunab_theme') || 'CLARO';
+        if (t === 'OSCURO') document.documentElement.setAttribute('data-theme','dark');
+      } catch(e){}
+    })();
+  </script>
+  <link rel="stylesheet" href="css/dunab-theme.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+
+            body { padding:20px 24px; }
+    .form-row { display:flex; gap:12px; margin-bottom:14px; }
+    .form-field { flex:1; }
+    .form-field label { display:block; font-size:12px; font-weight:600; color:var(--text-secondary); margin-bottom:5px; }
+    .form-field input, .form-field select, .form-field textarea {
+      width:100%; height:38px; border:1px solid var(--border); border-radius:8px;
+      padding:0 12px; font-size:13.5px; color:var(--text-primary);
+      background:var(--body-bg); outline:none; transition:border .15s;
+      font-family:'Inter',sans-serif;
+    }
+    .form-field textarea { height:auto; min-height:60px; padding:8px 12px; resize:vertical; }
+    .form-field input:focus, .form-field select:focus, .form-field textarea:focus { border-color:var(--unab-red); }
+
+    .ajuste-tipo-tabs {
+      display:flex; gap:8px; margin-bottom:14px;
+    }
+    .ajuste-tipo-tab {
+      flex:1; padding:10px; border-radius:10px; border:2px solid var(--border);
+      background:var(--body-bg); cursor:pointer; font-size:13px; font-weight:600;
+      text-align:center; transition:all .15s;
+    }
+    .ajuste-tipo-tab.active.sumar  { border-color:var(--green); background:var(--green-bg); color:var(--green-dark); }
+    .ajuste-tipo-tab.active.restar { border-color:var(--red-neg); background:var(--red-bg); color:var(--red-dark); }
+
+    .target-info {
+      background:var(--body-bg); padding:12px 14px; border-radius:10px; margin-bottom:14px;
+      display:flex; align-items:center; gap:12px;
+    }
+    .target-info .est-avatar { width:32px; height:32px; font-size:12px; }
+    .target-info-text { flex:1; }
+    .target-info .nombre-pri { font-size:13.5px; font-weight:600; }
+    .target-info .saldo-act { font-size:12px; color:var(--text-secondary); }
+
+    .modal-footer {
+      padding:14px 24px; border-top:1px solid var(--border);
+      display:flex; justify-content:flex-end; gap:10px;
+    }
+    .btn-mcancel {
+      padding:9px 18px; border-radius:10px; border:1px solid var(--border);
+      background:var(--card-bg); color:var(--text-secondary);
+      font-size:13.5px; font-weight:600; cursor:pointer;
+    }
+    .btn-msave {
+      padding:9px 18px; border-radius:10px; border:none;
+      background:var(--unab-red); color:#fff;
+      font-size:13.5px; font-weight:600; cursor:pointer; transition:background .15s;
+    }
+    .btn-msave:hover { background:var(--unab-red-dark); }
+    .btn-msave.sumar  { background:var(--green); }
+    .btn-msave.sumar:hover  { background:var(--green-dark); }
+    .btn-msave.restar { background:var(--red-neg); }
+    .btn-msave.restar:hover { background:var(--red-dark); }
+    .btn-msave.delete { background:var(--red-neg); }
+    .btn-msave.delete:hover { background:var(--red-dark); }
+
+    @keyframes slideInToast { from{transform:translateX(110%);opacity:0} to{transform:translateX(0);opacity:1} }
+  
+</style>
+</head>
+<body>
+
+<!-- ════ SIDEBAR ════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo" data-auto-logo></div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+    <a class="nav-item" href="encuentros.html"><span class="nav-icon">📅</span><span>Encuentros</span></a>
+    <a class="nav-item" href="ranking.html"><span class="nav-icon">🏆</span><span>Ranking</span></a>
+    <a class="nav-item" href="historial.html"><span class="nav-icon">⏱</span><span>Historial</span></a>
+    <a class="nav-item" href="transferencias.html"><span class="nav-icon">⇄</span><span>Transferencias</span></a>
+    <a class="nav-item" href="feed.html"><span class="nav-icon">📣</span><span>Feed</span></a>
+    <a class="nav-item" href="tienda.html"><span class="nav-icon">🛍️</span><span>Tienda</span></a>
+    <a class="nav-item nav-item-admin active" id="navGestionarEstudiantes" href="gestionar-estudiantes.html"><span class="nav-icon">🎓</span><span>Gestionar Estudiantes</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEncuentros" href="gestionar-encuentros.html"><span class="nav-icon">⚙</span><span>Gestionar Encuentros</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarRecompensas" href="gestionar-recompensas.html"><span class="nav-icon">🎁</span><span>Gestionar Tienda</span></a>
+    <a class="nav-item nav-item-super" id="navGestionarAdmins" href="gestionar-admins.html"><span class="nav-icon">🛡</span><span>Gestionar Admins</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <a class="nav-item" href="perfil.html"><span class="nav-icon">👤</span><span>Perfil</span></a>
+  </div>
+</aside>
+
+<!-- ════ MAIN ════ -->
+<div class="main">
+  <header class="topnav">
+  <div class="search-wrap">
+    <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" placeholder="Buscar encuentros, estudiantes…" id="topSearch"/>
+  </div>
+  <div class="topnav-right">
+    <div class="user-chip-wrap">
+      <div class="user-chip" id="userChipBtn">
+        <div class="user-meta">
+          <span class="user-meta-label" data-user-faculty>Facultad de Ciencias Jurídicas y Políticas</span>
+          <span class="user-meta-name" id="topUserName" data-user-name>Usuario</span>
+        </div>
+        <div class="user-avatar" id="topAvatar" data-user-avatar>U</div>
+      </div>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="dropdown-header">
+          <div class="d-name" id="dropName" data-user-name>Usuario</div>
+          <div class="d-role" id="dropRole" data-user-role>Estudiante</div>
+        </div>
+        <a class="dropdown-item" href="perfil.html">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Mi Perfil
+        </a>
+        <a class="dropdown-item" href="historial.html">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z"/><path d="M12 8v4l3 3"/></svg>
+          Historial
+        </a>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item danger" id="dropLogout" data-logout>
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Cerrar sesión
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+  <div class="content">
+    <div class="page-header">
+      <div>
+        <div class="page-title">Gestionar Estudiantes</div>
+        <div class="page-sub">Edita información, ajusta DUNAB y administra cuentas de estudiantes.</div>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-strip">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#DBEAFE">🎓</div>
+        <div>
+          <div class="stat-val" id="statTotal">—</div>
+          <div class="stat-lbl">Total estudiantes</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#D1FAE5">✅</div>
+        <div>
+          <div class="stat-val" id="statActivos">—</div>
+          <div class="stat-lbl">Activos</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FEE2E2">🔒</div>
+        <div>
+          <div class="stat-val" id="statInactivos">—</div>
+          <div class="stat-lbl">Inactivos</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FEF3C7">💰</div>
+        <div>
+          <div class="stat-val" id="statDunabTotal">—</div>
+          <div class="stat-lbl">DUNAB en circulación</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Toolbar -->
+    <div class="toolbar">
+      <div class="search-wrap">
+        <span class="search-icon">🔍</span>
+        <input class="search-input" id="searchInput" type="text"
+               placeholder="Buscar por nombre, código, correo o carrera..." oninput="renderTabla()"/>
+      </div>
+      <select class="filter-select" id="filterEstado" onchange="renderTabla()">
+        <option value="todos">Todos los estados</option>
+        <option value="activos">Solo activos</option>
+        <option value="inactivos">Solo inactivos</option>
+      </select>
+      <select class="filter-select" id="sortBy" onchange="renderTabla()">
+        <option value="nombre">Ordenar por nombre</option>
+        <option value="dunab-desc">DUNAB (mayor a menor)</option>
+        <option value="dunab-asc">DUNAB (menor a mayor)</option>
+        <option value="codigo">Código</option>
+        <option value="reciente">Más reciente</option>
+      </select>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <div class="table-title">Listado de Estudiantes</div>
+        <div class="table-count" id="tableCount">—</div>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>Estudiante</th>
+            <th>Código</th>
+            <th>Carrera</th>
+            <th>Semestre</th>
+            <th>DUNAB</th>
+            <th>Estado</th>
+            <th style="text-align:right">Acciones</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-light)">⏳ Cargando estudiantes...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL EDITAR ESTUDIANTE ════ -->
+<div class="modal-overlay" id="editOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title">✏️ Editar Estudiante</span>
+      <span class="modal-close" onclick="closeEditModal()">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="target-info" id="editTargetInfo">
+        <div class="est-avatar" id="editAvatar">?</div>
+        <div class="target-info-text">
+          <div class="nombre-pri" id="editTargetNombre">—</div>
+          <div class="saldo-act" id="editTargetCorreo">—</div>
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Nombre completo *</label>
+          <input type="text" id="eNombre" placeholder="Nombre del estudiante"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Correo institucional *</label>
+          <input type="email" id="eCorreo" placeholder="correo@unab.edu.co"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Carrera</label>
+          <input type="text" id="eCarrera" placeholder="Ej. Derecho"/>
+        </div>
+        <div class="form-field">
+          <label>Semestre</label>
+          <select id="eSemestre">
+            <option value="1">1°</option><option value="2">2°</option><option value="3">3°</option>
+            <option value="4">4°</option><option value="5">5°</option><option value="6">6°</option>
+            <option value="7">7°</option><option value="8">8°</option><option value="9">9°</option>
+            <option value="10">10°</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Celular</label>
+          <input type="text" id="eCelular" placeholder="+57 300 000 0000"/>
+        </div>
+        <div class="form-field">
+          <label>Cédula</label>
+          <input type="text" id="eCedula" placeholder="123456789"/>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-mcancel" onclick="closeEditModal()">Cancelar</button>
+      <button class="btn-msave" onclick="guardarEdicion()">Guardar cambios</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL AJUSTAR DUNAB ════ -->
+<div class="modal-overlay" id="ajusteOverlay">
+  <div class="modal" style="max-width:460px">
+    <div class="modal-header">
+      <span class="modal-title">💰 Ajustar DUNAB</span>
+      <span class="modal-close" onclick="closeAjusteModal()">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="target-info">
+        <div class="est-avatar" id="ajusteAvatar">?</div>
+        <div class="target-info-text">
+          <div class="nombre-pri" id="ajusteTargetNombre">—</div>
+          <div class="saldo-act">Saldo actual: <strong id="ajusteSaldoActual">—</strong></div>
+        </div>
+      </div>
+
+      <div class="ajuste-tipo-tabs">
+        <div class="ajuste-tipo-tab sumar active" id="tabSumar" onclick="setTipoAjuste('sumar')">
+          ➕ Sumar DUNAB
+        </div>
+        <div class="ajuste-tipo-tab restar" id="tabRestar" onclick="setTipoAjuste('restar')">
+          ➖ Restar DUNAB
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-field">
+          <label>Cantidad *</label>
+          <input type="number" id="aCantidad" placeholder="Ej. 500" min="1" max="10000"/>
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="form-field">
+          <label>Motivo (opcional)</label>
+          <textarea id="aMotivo" placeholder="Ej. Ajuste por error en asistencia, bonificación, penalización..."></textarea>
+        </div>
+      </div>
+
+      <p style="font-size:12px;color:var(--text-light);margin-top:4px">
+        ℹ️ Máximo <strong>10 000 DUNAB</strong> por operación. El ajuste queda registrado en el historial del estudiante.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-mcancel" onclick="closeAjusteModal()">Cancelar</button>
+      <button class="btn-msave sumar" id="btnAjustar" onclick="ejecutarAjuste()">Aplicar ajuste</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════ MODAL CONFIRMAR ELIMINAR ════ -->
+<div class="modal-overlay" id="deleteOverlay">
+  <div class="modal" style="max-width:420px">
+    <div class="modal-header">
+      <span class="modal-title" style="color:var(--red-dark)">⚠️ Eliminar Estudiante</span>
+      <span class="modal-close" onclick="closeDeleteModal()">✕</span>
+    </div>
+    <div class="modal-body">
+      <div class="target-info">
+        <div class="est-avatar" id="deleteAvatar" style="background:var(--red-neg)">?</div>
+        <div class="target-info-text">
+          <div class="nombre-pri" id="deleteTargetNombre">—</div>
+          <div class="saldo-act" id="deleteTargetCodigo">—</div>
+        </div>
+      </div>
+      <p style="font-size:13.5px;color:var(--text-primary);line-height:1.5">
+        Esta acción <strong>no se puede deshacer</strong>. El estudiante y todas sus inscripciones,
+        transacciones y transferencias asociadas serán eliminadas permanentemente.
+      </p>
+      <p style="font-size:12px;color:var(--text-secondary);margin-top:8px">
+        Si solo quieres bloquear el acceso, usa <em>Desactivar cuenta</em> en su lugar.
+      </p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-mcancel" onclick="closeDeleteModal()">Cancelar</button>
+      <button class="btn-msave delete" onclick="confirmarEliminar()">🗑️ Eliminar definitivamente</button>
+    </div>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/theme.js"></script>
+<script>
+// ── GUARD: ADMIN o SUPERADMIN ────────────────────────────────────────────────
+let estudiantes = [];
+let _editId = null;
+let _ajusteId = null;
+let _ajusteTipo = 'sumar';
+let _deleteId = null;
+
+document.addEventListener('DOMContentLoaded', async () => {
+  const user = Auth.getUser();
+  if (!user) { Auth.logout(); return; }
+  if (user.rol !== 'ADMIN' && user.rol !== 'SUPERADMIN') {
+    showToast('Acceso restringido a administradores.', 'error');
+    setTimeout(() => { window.location.href = 'dashboard.html'; }, 1500);
+    return;
+  }
+
+  // Topnav
+  const iniciales = user.nombre ? user.nombre.split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase() : 'AD';
+  const av = document.getElementById('topAvatar');
+  const tn = document.getElementById('topUserName');
+  const dn = document.getElementById('dropName');
+  const dr = document.getElementById('dropRole');
+  const badge = document.getElementById('rolBadge');
+  if (av) av.textContent = iniciales;
+  if (tn) tn.textContent = user.nombre || 'Admin';
+  if (dn) dn.textContent = user.nombre || '—';
+  if (user.rol === 'SUPERADMIN') {
+    if (dr) dr.textContent = 'Superadministrador';
+    if (badge) { badge.textContent = '⭐ SUPERADMIN'; badge.style.background = 'linear-gradient(135deg,#D97706,#F59E0B)'; }
+  } else {
+    if (dr) dr.textContent = 'Administrador';
+  }
+
+  // Mostrar nav items según rol
+  document.querySelectorAll('.nav-item-admin').forEach(el => el.classList.add('visible'));
+  if (user.rol === 'SUPERADMIN') {
+    document.querySelectorAll('.nav-item-super').forEach(el => el.classList.add('visible'));
+  }
+
+  await cargarEstudiantes();
+});
+
+// ── CARGAR LISTA ─────────────────────────────────────────────────────────────
+async function cargarEstudiantes() {
+  try {
+    estudiantes = await UsuarioAPI.listarEstudiantes();
+    renderTabla();
+    actualizarStats();
+  } catch (err) {
+    document.getElementById('tableBody').innerHTML =
+      `<tr><td colspan="7" style="text-align:center;padding:40px;color:#EF4444">⚠️ ${err.message || 'Error cargando estudiantes.'}</td></tr>`;
+  }
+}
+
+function filtrarYOrdenar(lista) {
+  const q = document.getElementById('searchInput').value.trim().toLowerCase();
+  const estado = document.getElementById('filterEstado').value;
+  const sort = document.getElementById('sortBy').value;
+
+  let res = lista.slice();
+
+  if (q) {
+    res = res.filter(e => {
+      const t = `${e.nombre} ${e.codigo} ${e.correo} ${e.carrera || ''}`.toLowerCase();
+      return t.includes(q);
+    });
+  }
+  if (estado === 'activos')   res = res.filter(e => e.activo !== false);
+  if (estado === 'inactivos') res = res.filter(e => e.activo === false);
+
+  switch (sort) {
+    case 'dunab-desc': res.sort((a,b) => (b.balanceDunab||0) - (a.balanceDunab||0)); break;
+    case 'dunab-asc':  res.sort((a,b) => (a.balanceDunab||0) - (b.balanceDunab||0)); break;
+    case 'codigo':     res.sort((a,b) => (a.codigo||'').localeCompare(b.codigo||'')); break;
+    case 'reciente':   res.sort((a,b) => new Date(b.creadoEn||0) - new Date(a.creadoEn||0)); break;
+    default:           res.sort((a,b) => (a.nombre||'').localeCompare(b.nombre||''));
+  }
+  return res;
+}
+
+function renderTabla() {
+  const tbody = document.getElementById('tableBody');
+  const lista = filtrarYOrdenar(estudiantes);
+  document.getElementById('tableCount').textContent =
+    `${lista.length} ${lista.length === 1 ? 'estudiante' : 'estudiantes'}`;
+
+  if (!lista.length) {
+    tbody.innerHTML = `<tr><td colspan="7"><div class="empty-state">
+      <div class="empty-icon">🎓</div>
+      <div>No se encontraron estudiantes con esos filtros.</div>
+    </div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = lista.map(e => {
+    const iniciales = (e.nombre || '?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+    const activo = e.activo !== false;
+    const color = stringToColor(e.nombre || '');
+    return `<tr>
+      <td>
+        <div class="est-name-cell">
+          <div class="est-avatar" style="background:${color}">${iniciales}</div>
+          <div>
+            <div class="est-name">${escapeHtml(e.nombre || '—')}</div>
+            <div class="est-correo">${escapeHtml(e.correo || '—')}</div>
+          </div>
+        </div>
+      </td>
+      <td><span class="est-codigo">${escapeHtml(e.codigo || '—')}</span></td>
+      <td>${escapeHtml(e.carrera || '—')}</td>
+      <td>${e.semestre ? e.semestre + '°' : '—'}</td>
+      <td><span class="est-dunab">${(e.balanceDunab||0).toLocaleString('es-CO')} D</span></td>
+      <td>
+        <span class="status-dot ${activo?'active':'inactive'}"></span>
+        <span style="font-size:13px;color:${activo?'var(--green-dark)':'var(--text-light)'}">${activo?'Activo':'Inactivo'}</span>
+      </td>
+      <td style="text-align:right;white-space:nowrap">
+        <button class="action-btn dunab" onclick="openAjusteModal(${e.id})" title="Sumar o restar DUNAB">💰 DUNAB</button>
+        <button class="action-btn edit" onclick="openEditModal(${e.id})" title="Editar información">✏️ Editar</button>
+        <button class="action-btn toggle" onclick="toggleActivo(${e.id}, ${activo})" title="${activo?'Desactivar':'Activar'} cuenta">
+          ${activo ? '🔒' : '🔓'}
+        </button>
+        <button class="action-btn delete" onclick="openDeleteModal(${e.id})" title="Eliminar permanentemente">🗑️</button>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function actualizarStats() {
+  const total = estudiantes.length;
+  const activos = estudiantes.filter(e => e.activo !== false).length;
+  const inactivos = total - activos;
+  const totalDunab = estudiantes.reduce((s, e) => s + (e.balanceDunab || 0), 0);
+  document.getElementById('statTotal').textContent     = total;
+  document.getElementById('statActivos').textContent   = activos;
+  document.getElementById('statInactivos').textContent = inactivos;
+  document.getElementById('statDunabTotal').textContent = totalDunab.toLocaleString('es-CO');
+}
+
+// ── EDITAR ───────────────────────────────────────────────────────────────────
+function openEditModal(id) {
+  const e = estudiantes.find(x => x.id === id);
+  if (!e) return;
+  _editId = id;
+  const iniciales = (e.nombre || '?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const av = document.getElementById('editAvatar');
+  av.textContent = iniciales;
+  av.style.background = stringToColor(e.nombre || '');
+  document.getElementById('editTargetNombre').textContent = e.nombre || '—';
+  document.getElementById('editTargetCorreo').textContent = `Cód. ${e.codigo || '—'}`;
+
+  document.getElementById('eNombre').value   = e.nombre   || '';
+  document.getElementById('eCorreo').value   = e.correo   || '';
+  document.getElementById('eCarrera').value  = e.carrera  || '';
+  document.getElementById('eSemestre').value = e.semestre || 1;
+  document.getElementById('eCelular').value  = e.celular  || '';
+  document.getElementById('eCedula').value   = e.cedula   || '';
+
+  document.getElementById('editOverlay').classList.add('open');
+}
+
+function closeEditModal() {
+  document.getElementById('editOverlay').classList.remove('open');
+  _editId = null;
+}
+
+async function guardarEdicion() {
+  if (!_editId) return;
+  const payload = {
+    nombre:   document.getElementById('eNombre').value.trim()   || null,
+    correo:   document.getElementById('eCorreo').value.trim()   || null,
+    carrera:  document.getElementById('eCarrera').value.trim()  || null,
+    semestre: parseInt(document.getElementById('eSemestre').value) || null,
+    celular:  document.getElementById('eCelular').value.trim()  || null,
+    cedula:   document.getElementById('eCedula').value.trim()   || null
+  };
+  if (!payload.nombre || !payload.correo) {
+    showToast('Nombre y correo son obligatorios.', 'error');
+    return;
+  }
+  try {
+    await UsuarioAPI.editarEstudiante(_editId, payload);
+    showToast('Estudiante actualizado correctamente.', 'success');
+    closeEditModal();
+    await cargarEstudiantes();
+  } catch (err) {
+    showToast(err.message || 'Error al actualizar.', 'error');
+  }
+}
+
+// ── AJUSTE DE DUNAB ──────────────────────────────────────────────────────────
+function openAjusteModal(id) {
+  const e = estudiantes.find(x => x.id === id);
+  if (!e) return;
+  _ajusteId = id;
+  _ajusteTipo = 'sumar';
+  setTipoAjuste('sumar');
+
+  const iniciales = (e.nombre || '?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  const av = document.getElementById('ajusteAvatar');
+  av.textContent = iniciales;
+  av.style.background = stringToColor(e.nombre || '');
+  document.getElementById('ajusteTargetNombre').textContent = e.nombre || '—';
+  document.getElementById('ajusteSaldoActual').textContent = (e.balanceDunab || 0).toLocaleString('es-CO') + ' D';
+
+  document.getElementById('aCantidad').value = '';
+  document.getElementById('aMotivo').value = '';
+  document.getElementById('ajusteOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('aCantidad').focus(), 100);
+}
+
+function closeAjusteModal() {
+  document.getElementById('ajusteOverlay').classList.remove('open');
+  _ajusteId = null;
+}
+
+function setTipoAjuste(tipo) {
+  _ajusteTipo = tipo;
+  const tabS = document.getElementById('tabSumar');
+  const tabR = document.getElementById('tabRestar');
+  const btn  = document.getElementById('btnAjustar');
+  if (tipo === 'sumar') {
+    tabS.classList.add('active');  tabR.classList.remove('active');
+    btn.classList.add('sumar');    btn.classList.remove('restar');
+    btn.textContent = '➕ Sumar DUNAB';
+  } else {
+    tabR.classList.add('active');  tabS.classList.remove('active');
+    btn.classList.add('restar');   btn.classList.remove('sumar');
+    btn.textContent = '➖ Restar DUNAB';
+  }
+}
+
+async function ejecutarAjuste() {
+  if (!_ajusteId) return;
+  const cantidad = parseInt(document.getElementById('aCantidad').value) || 0;
+  const motivo   = document.getElementById('aMotivo').value.trim();
+  if (cantidad < 1 || cantidad > 10000) {
+    showToast('Ingresa una cantidad entre 1 y 10 000 DUNAB.', 'error');
+    return;
+  }
+  const monto = _ajusteTipo === 'sumar' ? cantidad : -cantidad;
+  try {
+    const r = await UsuarioAPI.ajustarDunab(_ajusteId, monto, motivo || null);
+    const verbo = _ajusteTipo === 'sumar' ? 'sumados a' : 'restados de';
+    showToast(`${cantidad.toLocaleString('es-CO')} DUNAB ${verbo} ${r.nombre}. Nuevo saldo: ${r.balanceDunab.toLocaleString('es-CO')} D.`, 'success');
+    closeAjusteModal();
+    await cargarEstudiantes();
+  } catch (err) {
+    showToast(err.message || 'Error al ajustar DUNAB.', 'error');
+  }
+}
+
+// ── TOGGLE ACTIVAR/DESACTIVAR ────────────────────────────────────────────────
+async function toggleActivo(id, estaActivo) {
+  const e = estudiantes.find(x => x.id === id);
+  const nombre = e ? e.nombre : 'el estudiante';
+  if (!confirm(`¿${estaActivo ? 'Desactivar' : 'Activar'} la cuenta de ${nombre}?`)) return;
+  try {
+    await UsuarioAPI.toggleActivo(id);
+    showToast(`Cuenta de ${nombre} ${estaActivo ? 'desactivada' : 'activada'}.`, estaActivo ? 'warning' : 'success');
+    await cargarEstudiantes();
+  } catch (err) {
+    showToast(err.message || 'Error al cambiar estado.', 'error');
+  }
+}
+
+// ── ELIMINAR ─────────────────────────────────────────────────────────────────
+function openDeleteModal(id) {
+  const e = estudiantes.find(x => x.id === id);
+  if (!e) return;
+  _deleteId = id;
+  const iniciales = (e.nombre || '?').split(' ').map(w=>w[0]).join('').substring(0,2).toUpperCase();
+  document.getElementById('deleteAvatar').textContent = iniciales;
+  document.getElementById('deleteTargetNombre').textContent = e.nombre || '—';
+  document.getElementById('deleteTargetCodigo').textContent = `Cód. ${e.codigo || '—'} · ${(e.balanceDunab||0).toLocaleString('es-CO')} D`;
+  document.getElementById('deleteOverlay').classList.add('open');
+}
+
+function closeDeleteModal() {
+  document.getElementById('deleteOverlay').classList.remove('open');
+  _deleteId = null;
+}
+
+async function confirmarEliminar() {
+  if (!_deleteId) return;
+  try {
+    await UsuarioAPI.eliminarEstudiante(_deleteId);
+    showToast('Estudiante eliminado correctamente.', 'success');
+    closeDeleteModal();
+    await cargarEstudiantes();
+  } catch (err) {
+    showToast(err.message || 'Error al eliminar.', 'error');
+  }
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────────
+function escapeHtml(s) {
+  return String(s).replace(/[&<>"']/g, c => ({
+    '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+  }[c]));
+}
+
+function stringToColor(s) {
+  const palette = ['#8C1D40','#1E40AF','#065F46','#92400E','#6B21A8','#155E75','#9D174D','#166534','#1E3A5F','#7C2D12'];
+  let h = 0;
+  for (let i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+  return palette[h % palette.length];
+}
+
+// ── DROPDOWN ─────────────────────────────────────────────────────────────────
+(function initDropdown() {
+  const btn  = document.getElementById('userChipBtn');
+  const drop = document.getElementById('userDropdown');
+  if (!btn || !drop) return;
+  btn.addEventListener('click', e => { e.stopPropagation(); drop.classList.toggle('open'); });
+  document.addEventListener('click', () => drop.classList.remove('open'));
+  const logoutBtn = document.getElementById('dropLogout');
+  if (logoutBtn) logoutBtn.addEventListener('click', () => Auth.logout());
+})();
+
+// ── Cerrar modales con clic fuera ────────────────────────────────────────────
+['editOverlay','ajusteOverlay','deleteOverlay'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', e => {
+    if (e.target === el) {
+      el.classList.remove('open');
+    }
+  });
+});
+</script>
+</body>
+</html>

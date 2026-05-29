@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Historial – DUNAB</title>
+  
+  <script>
+    (function(){
+      try {
+        var u = JSON.parse(localStorage.getItem('dunab_user')||'null');
+        var t = (u && u.temaPreferencia) || localStorage.getItem('dunab_theme') || 'CLARO';
+        if (t === 'OSCURO') document.documentElement.setAttribute('data-theme','dark');
+      } catch(e){}
+    })();
+  </script>
+  <link rel="stylesheet" href="css/dunab-theme.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+</style>
+</head>
+<body>
+
+<!-- ══════════════════════ SIDEBAR ══════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo" data-auto-logo></div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+    <a class="nav-item" href="encuentros.html"><span class="nav-icon">📅</span><span>Encuentros</span></a>
+    <a class="nav-item" href="ranking.html"><span class="nav-icon">🏆</span><span>Ranking</span></a>
+    <a class="nav-item active" href="historial.html"><span class="nav-icon">⏱</span><span>Historial</span></a>
+    <a class="nav-item" href="transferencias.html"><span class="nav-icon">⇄</span><span>Transferencias</span></a>
+    <a class="nav-item" href="feed.html"><span class="nav-icon">📣</span><span>Feed</span></a>
+    <a class="nav-item" href="tienda.html"><span class="nav-icon">🛍️</span><span>Tienda</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEstudiantes" href="gestionar-estudiantes.html"><span class="nav-icon">🎓</span><span>Gestionar Estudiantes</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEncuentros" href="gestionar-encuentros.html"><span class="nav-icon">⚙</span><span>Gestionar Encuentros</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarRecompensas" href="gestionar-recompensas.html"><span class="nav-icon">🎁</span><span>Gestionar Tienda</span></a>
+    <a class="nav-item nav-item-super" id="navGestionarAdmins" href="gestionar-admins.html"><span class="nav-icon">🛡</span><span>Gestionar Admins</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <a class="nav-item" href="perfil.html"><span class="nav-icon">👤</span><span>Perfil</span></a>
+  </div>
+</aside>
+
+<!-- ══════════════════════ MAIN ══════════════════════════ -->
+<div class="main">
+  <header class="topnav">
+    <div class="search-wrap">
+      <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="Buscar en mi historial…" id="topSearch"/>
+    </div>
+    <div class="topnav-right">
+      <div class="user-chip-wrap">
+        <div class="user-chip" id="userChipBtn">
+          <div class="user-meta">
+            <span class="user-meta-label" data-user-faculty>Facultad de Ciencias Jurídicas y Políticas</span>
+            <span class="user-meta-name" id="topUserName" data-user-name>Usuario</span>
+          </div>
+          <div class="user-avatar" id="topAvatar" data-user-avatar>U</div>
+        </div>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="dropdown-header">
+            <div class="d-name" id="dropName" data-user-name>Usuario</div>
+            <div class="d-role" id="dropRole" data-user-role>Estudiante</div>
+          </div>
+          <a class="dropdown-item" href="perfil.html">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Mi Perfil
+          </a>
+          <a class="dropdown-item" href="dashboard.html">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Dashboard
+          </a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item danger" id="dropLogout" data-logout>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            Cerrar sesión
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+    <h1 class="page-title">Historial de Transacciones</h1>
+    <p class="page-subtitle">Registro completo de todos tus movimientos de DUNAB</p>
+
+    <!-- STATS -->
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Total Ingresos</div>
+        <div class="stat-value pos" id="statIngresos">0 D</div>
+        <div class="stat-sub">Todos los tiempos</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Egresos</div>
+        <div class="stat-value neg" id="statEgresos">0 D</div>
+        <div class="stat-sub">Penalizaciones + enviados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Balance Actual</div>
+        <div class="stat-value" id="statBalance">0 D</div>
+        <div class="stat-sub">DUNAB acumulados</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Movimientos</div>
+        <div class="stat-value" id="statTotal">0</div>
+        <div class="stat-sub">Transacciones registradas</div>
+      </div>
+    </div>
+
+    <!-- FILTROS -->
+    <div class="filters-card">
+      <div class="filter-group">
+        <label class="filter-label">Buscar</label>
+        <input class="filter-input" id="fBuscar" type="text" placeholder="Descripción..."/>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Tipo</label>
+        <select class="filter-select" id="fTipo">
+          <option value="">Todos</option>
+          <option value="INGRESO">Ingreso</option>
+          <option value="EGRESO">Egreso</option>
+          <option value="TRANSFERENCIA_ENVIADA">Transferencia enviada</option>
+          <option value="TRANSFERENCIA_RECIBIDA">Transferencia recibida</option>
+          <option value="PENALIZACION">Penalización</option>
+          <option value="RACHA_BONUS">Racha bonus</option>
+        </select>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Desde</label>
+        <input class="filter-input" id="fDesde" type="date"/>
+      </div>
+      <div class="filter-group">
+        <label class="filter-label">Hasta</label>
+        <input class="filter-input" id="fHasta" type="date"/>
+      </div>
+      <button class="btn-limpiar" onclick="limpiarFiltros()">✕ Limpiar</button>
+    </div>
+
+    <!-- TABLA -->
+    <div class="table-card">
+      <div class="table-header">
+        <span class="table-title">Movimientos</span>
+        <span class="table-count" id="tableCount">—</span>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Descripción</th>
+              <th>Tipo</th>
+              <th>Monto</th>
+              <th>Balance tras tx</th>
+              <th>Fecha</th>
+            </tr>
+          </thead>
+          <tbody id="txBody">
+            <tr><td colspan="6" style="text-align:center;padding:40px;color:#9CA3AF">
+              <span style="font-size:28px">⏳</span><br>Cargando historial...
+            </td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pagination" id="paginacion">
+        <span class="pag-info" id="pagInfo">—</span>
+        <div class="pag-btns" id="pagBtns"></div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/theme.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  HISTORIAL — Carga y filtrado desde la API
+// ═══════════════════════════════════════════════════════════════════════════
+const POR_PAGINA = 15;
+let todasTx     = [];   // historial completo cargado de la API
+let txFiltradas = [];   // después de aplicar filtros
+let paginaActual = 1;
+
+const TIPO_LABEL = {
+  INGRESO:              { label: 'Ingreso',             cls: 'badge-ingreso',    emoji: '💚' },
+  EGRESO:               { label: 'Egreso',              cls: 'badge-egreso',     emoji: '🔴' },
+  TRANSFERENCIA_ENVIADA:{ label: 'Transferencia enviada',cls:'badge-enviada',    emoji: '💸' },
+  TRANSFERENCIA_RECIBIDA:{label:'Transferencia recibida',cls:'badge-recibida',   emoji: '💰' },
+  PENALIZACION:         { label: 'Penalización',        cls: 'badge-penalizacion',emoji:'⚠️' },
+  RACHA_BONUS:          { label: 'Racha bonus',         cls: 'badge-racha',      emoji: '🔥' },
+};
+
+function esNeg(tipo) {
+  return ['EGRESO','TRANSFERENCIA_ENVIADA','PENALIZACION'].includes(tipo);
+}
+
+// ── Render tabla ─────────────────────────────────────────────────────────
+function renderTabla() {
+  const tbody = document.getElementById('txBody');
+  const total = txFiltradas.length;
+  const inicio = (paginaActual - 1) * POR_PAGINA;
+  const fin    = Math.min(inicio + POR_PAGINA, total);
+  const pagina = txFiltradas.slice(inicio, fin);
+
+  document.getElementById('tableCount').textContent = `${total} movimiento${total !== 1 ? 's' : ''}`;
+  document.getElementById('pagInfo').textContent     = total
+    ? `Mostrando ${inicio + 1}–${fin} de ${total}`
+    : 'Sin resultados';
+
+  if (!pagina.length) {
+    tbody.innerHTML = `<tr><td colspan="6" class="empty-state">
+      <div class="empty-icon">🔍</div>
+      <p>No hay transacciones que coincidan con los filtros.</p>
+    </td></tr>`;
+    renderPaginacion(total);
+    return;
+  }
+
+  tbody.innerHTML = pagina.map((tx, i) => {
+    const info  = TIPO_LABEL[tx.tipo] || { label: tx.tipo, cls: 'badge-otro', emoji: '📋' };
+    const signo = esNeg(tx.tipo) ? '−' : '+';
+    const cls   = esNeg(tx.tipo) ? 'amount-neg' : 'amount-pos';
+    return `
+      <tr>
+        <td style="color:var(--text-light);font-size:12px">${inicio + i + 1}</td>
+        <td>
+          <div style="font-weight:500">${info.emoji} ${tx.descripcion || tx.tipo}</div>
+          ${tx.referenciaId ? `<div style="font-size:11px;color:var(--text-light)">Ref. #${tx.referenciaId}</div>` : ''}
+        </td>
+        <td><span class="tx-type-badge ${info.cls}">${info.label}</span></td>
+        <td class="${cls}">${signo}${fmtNum(tx.monto)} D</td>
+        <td style="color:var(--text-secondary)">${fmtNum(tx.balancePost)} D</td>
+        <td style="color:var(--text-secondary);white-space:nowrap">${fmtFechaHora(tx.creadoEn)}</td>
+      </tr>`;
+  }).join('');
+
+  renderPaginacion(total);
+}
+
+// ── Paginación ───────────────────────────────────────────────────────────
+function renderPaginacion(total) {
+  const totalPags = Math.ceil(total / POR_PAGINA);
+  const btns = document.getElementById('pagBtns');
+  if (!btns) return;
+  btns.innerHTML = '';
+
+  const addBtn = (txt, pg, disabled = false, active = false) => {
+    const b = document.createElement('button');
+    b.className = 'pag-btn' + (active ? ' active' : '');
+    b.textContent = txt;
+    b.disabled = disabled;
+    b.onclick = () => { paginaActual = pg; renderTabla(); };
+    btns.appendChild(b);
+  };
+
+  addBtn('‹', paginaActual - 1, paginaActual === 1);
+  for (let p = 1; p <= totalPags; p++) {
+    if (totalPags <= 7 || Math.abs(p - paginaActual) <= 1 || p === 1 || p === totalPags) {
+      addBtn(p, p, false, p === paginaActual);
+    } else if (Math.abs(p - paginaActual) === 2) {
+      const sp = document.createElement('span');
+      sp.textContent = '…';
+      sp.style.cssText = 'padding:6px 4px;font-size:13px;color:var(--text-light)';
+      btns.appendChild(sp);
+    }
+  }
+  addBtn('›', paginaActual + 1, paginaActual === totalPags || totalPags === 0);
+}
+
+// ── Aplicar filtros ──────────────────────────────────────────────────────
+function aplicarFiltros() {
+  const q     = document.getElementById('fBuscar').value.toLowerCase().trim();
+  const tipo  = document.getElementById('fTipo').value;
+  const desde = document.getElementById('fDesde').value ? new Date(document.getElementById('fDesde').value) : null;
+  const hasta = document.getElementById('fHasta').value ? new Date(document.getElementById('fHasta').value + 'T23:59:59') : null;
+
+  txFiltradas = todasTx.filter(tx => {
+    const desc    = (tx.descripcion || tx.tipo || '').toLowerCase();
+    const fecha   = new Date(tx.creadoEn);
+    const matchQ  = !q     || desc.includes(q);
+    const matchT  = !tipo  || tx.tipo === tipo;
+    const matchD  = !desde || fecha >= desde;
+    const matchH  = !hasta || fecha <= hasta;
+    return matchQ && matchT && matchD && matchH;
+  });
+
+  paginaActual = 1;
+  renderTabla();
+}
+
+function limpiarFiltros() {
+  document.getElementById('fBuscar').value = '';
+  document.getElementById('fTipo').value   = '';
+  document.getElementById('fDesde').value  = '';
+  document.getElementById('fHasta').value  = '';
+  txFiltradas  = [...todasTx];
+  paginaActual = 1;
+  renderTabla();
+}
+
+// ── Formato fecha con hora ────────────────────────────────────────────────
+function fmtFechaHora(iso) {
+  if (!iso) return '—';
+  const d = new Date(iso);
+  return d.toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' })
+       + ' ' + d.toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+}
+
+// ── Carga principal ──────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const [historial, perfil, stats] = await Promise.all([
+      TransaccionAPI.getHistorial(),
+      UsuarioAPI.getMiPerfil(),
+      TransaccionAPI.getEstadisticas()
+    ]);
+
+    todasTx     = historial;
+    txFiltradas = [...historial];
+
+    // Stats cards
+    document.getElementById('statIngresos').textContent = fmtNum(stats.totalIngresos) + ' D';
+    document.getElementById('statEgresos').textContent  = fmtNum(stats.totalEgresos)  + ' D';
+    document.getElementById('statBalance').textContent  = fmtNum(perfil.balanceDunab) + ' D';
+    document.getElementById('statTotal').textContent    = historial.length;
+
+    // Dropdown datos
+    const dropName = document.getElementById('dropName');
+    const dropRole = document.getElementById('dropRole');
+    const topName  = document.getElementById('topUserName');
+    const topAv    = document.getElementById('topAvatar');
+    if (dropName) dropName.textContent = perfil.nombre;
+    if (dropRole) dropRole.textContent = perfil.rol === 'ADMIN' ? 'Administrador' : 'Estudiante';
+    if (topName)  topName.textContent  = perfil.nombre.split(' ').slice(0,2).join(' ');
+    if (topAv)    topAv.textContent    = perfil.nombre.split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+
+    // Render
+    renderTabla();
+
+    // Eventos de filtro
+    ['fBuscar','fTipo','fDesde','fHasta'].forEach(id => {
+      document.getElementById(id)?.addEventListener('input', aplicarFiltros);
+      document.getElementById(id)?.addEventListener('change', aplicarFiltros);
+    });
+
+  } catch (err) {
+    console.error('Error cargando historial:', err);
+    document.getElementById('txBody').innerHTML = `
+      <tr><td colspan="6" style="text-align:center;padding:40px;color:#EF4444">
+        ⚠️ No se pudo cargar el historial. Verifica que el backend esté activo.
+      </td></tr>`;
+    showToast('Error al cargar el historial.', 'error');
+  }
+});
+
+// ── Dropdown ─────────────────────────────────────────────────────────────
+(function() {
+  const btn = document.getElementById('userChipBtn');
+  const dd  = document.getElementById('userDropdown');
+  const out = document.getElementById('dropLogout');
+  if (btn && dd) {
+    btn.addEventListener('click', e => { e.stopPropagation(); dd.classList.toggle('open'); });
+    document.addEventListener('click', () => dd.classList.remove('open'));
+    dd.addEventListener('click', e => e.stopPropagation());
+  }
+  if (out) out.addEventListener('click', () => Auth.logout());
+})();
+
+// Mostrar enlaces de gestión según el rol del usuario
+(function showAdminLinks() {
+  const user = Auth.getUser();
+  if (!user) return;
+  if (user.rol === 'ADMIN' || user.rol === 'SUPERADMIN') {
+    const elEst = document.getElementById('navGestionarEstudiantes');
+    if (elEst) elEst.classList.add('visible');
+  }
+  if (user.rol === 'SUPERADMIN') {
+    const el = document.getElementById('navGestionarAdmins');
+    if (el) el.classList.add('visible');
+  }
+})();
+
+</script>
+</body>
+</html>

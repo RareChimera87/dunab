@@ -1,0 +1,989 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>DUNAB · Dashboard</title>
+  <!-- Aplicar tema antes del primer paint para evitar flash -->
+  <script>
+    (function(){
+      try {
+        var u = JSON.parse(localStorage.getItem('dunab_user')||'null');
+        var t = (u && u.temaPreferencia) || localStorage.getItem('dunab_theme') || 'CLARO';
+        if (t === 'OSCURO') document.documentElement.setAttribute('data-theme','dark');
+      } catch(e){}
+    })();
+  </script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="css/dunab-theme.css"/>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+  <style>
+    /* ── Layout específico del Dashboard ── */
+    .grid-top, .grid-bottom {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    .balance-value {
+      font-size: 30px;
+      font-weight: 700;
+      margin: 8px 0 6px;
+      color: var(--text-primary);
+    }
+    .balance-period { font-size: 12px; color: var(--text-light); margin-top: 4px; }
+    .chart-wrap { margin-top: 18px; height: 150px; position: relative; }
+
+    .donut-wrap {
+      display: flex; justify-content: center;
+      margin: 8px 0;
+      position: relative;
+      height: 170px;
+    }
+    .donut-center {
+      position: absolute; top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
+    .donut-center-val { font-size: 22px; font-weight: 700; color: var(--text-primary); }
+    .donut-center-lbl { font-size: 11px; color: var(--text-light); }
+    .donut-legend { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+    .donut-legend-item { display: flex; align-items: center; justify-content: space-between; font-size: 12.5px; color: var(--text-secondary); }
+    .donut-legend-left { display: flex; align-items: center; gap: 8px; }
+    .donut-legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .donut-pct { font-weight: 600; color: var(--text-primary); }
+
+    .grad-ring-wrap {
+      display: flex; align-items: center; gap: 18px;
+      margin: 8px 0 14px;
+    }
+    .grad-ring { position: relative; width: 130px; height: 130px; flex-shrink: 0; }
+    .grad-ring-pct {
+      position: absolute; inset: 0;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 22px; font-weight: 700; color: var(--text-primary);
+    }
+    .grad-req-list { flex: 1; }
+    .grad-req-item {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 7px 0;
+      font-size: 13px;
+    }
+    .grad-req-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      display: inline-block; margin-right: 8px;
+    }
+    .grad-req-label { color: var(--text-primary); display: flex; align-items: center; }
+    .grad-req-val { color: var(--text-secondary); font-weight: 600; font-size: 12.5px; }
+
+    .tx-item {
+      display: flex; align-items: center; gap: 12px;
+      padding: 12px 0;
+      border-bottom: 1px solid var(--border-soft);
+    }
+    .tx-item:last-child { border-bottom: none; }
+    .tx-icon {
+      width: 38px; height: 38px; border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px; flex-shrink: 0;
+    }
+    .tx-info { flex: 1; min-width: 0; }
+    .tx-name { font-size: 13.5px; font-weight: 500; color: var(--text-primary); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .tx-type { font-size: 11.5px; color: var(--text-light); margin-top: 2px; }
+    .tx-amount { font-size: 14px; font-weight: 600; white-space: nowrap; text-align: right; }
+    .tx-amount .tx-state { display: block; font-size: 10.5px; font-weight: 500; color: var(--text-light); margin-top: 1px; }
+    .tx-amount.pos { color: var(--green); }
+    .tx-amount.neg { color: var(--red-neg); }
+
+    .legend { display: flex; gap: 18px; margin-top: 10px; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-secondary); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+
+    @media (max-width: 980px) {
+      .grid-top, .grid-bottom { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══════════════════ SIDEBAR ═══════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo" data-auto-logo></div>
+
+  <nav class="sidebar-nav">
+    <a class="nav-item active" href="dashboard.html"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+    <a class="nav-item" href="encuentros.html"><span class="nav-icon">📅</span><span>Encuentros</span></a>
+    <a class="nav-item" href="ranking.html"><span class="nav-icon">🏆</span><span>Ranking</span></a>
+    <a class="nav-item" href="historial.html"><span class="nav-icon">⏱</span><span>Historial</span></a>
+    <a class="nav-item" href="transferencias.html"><span class="nav-icon">⇄</span><span>Transferencias</span></a>
+    <a class="nav-item" href="feed.html"><span class="nav-icon">📣</span><span>Feed</span></a>
+    <a class="nav-item" href="tienda.html"><span class="nav-icon">🛍️</span><span>Tienda</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEstudiantes" href="gestionar-estudiantes.html"><span class="nav-icon">🎓</span><span>Gestionar Estudiantes</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEncuentros" href="gestionar-encuentros.html"><span class="nav-icon">⚙</span><span>Gestionar Encuentros</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarRecompensas" href="gestionar-recompensas.html"><span class="nav-icon">🎁</span><span>Gestionar Tienda</span></a>
+    <a class="nav-item nav-item-super" id="navGestionarAdmins" href="gestionar-admins.html"><span class="nav-icon">🛡</span><span>Gestionar Admins</span></a>
+  </nav>
+
+  <div class="sidebar-footer">
+    <a class="nav-item" href="perfil.html"><span class="nav-icon">👤</span><span>Perfil</span></a>
+  </div>
+</aside>
+
+<!-- ═══════════════════ MAIN ═══════════════════ -->
+<div class="main">
+
+  <header class="topnav">
+    <div class="search-wrap">
+      <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="Buscar encuentros, estudiantes…" id="topSearch"/>
+    </div>
+    <div class="topnav-right">
+      <div class="notif-wrap" id="notifWrap">
+        <button class="icon-btn notif-btn" id="notifBtn" title="Notificaciones">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9M13.73 21a2 2 0 01-3.46 0"/></svg>
+          <span class="notif-dot" id="notifDot" style="display:none"></span>
+          <span class="notif-count" id="notifCount" style="display:none"></span>
+        </button>
+        <div class="notif-dropdown" id="notifDropdown">
+          <div class="notif-header">
+            <span class="notif-title">Notificaciones</span>
+            <a class="notif-ver-todo" href="feed.html">Ver todo</a>
+          </div>
+          <div class="notif-list" id="notifList">
+            <div class="notif-loading">Cargando…</div>
+          </div>
+        </div>
+      </div>
+      <div class="user-chip-wrap">
+        <div class="user-chip" id="userChipBtn">
+          <div class="user-meta">
+            <span class="user-meta-label" data-user-faculty>Facultad de Ciencias Jurídicas y Políticas</span>
+            <span class="user-meta-name" id="topUserName">Estudiante</span>
+          </div>
+          <div class="user-avatar" id="topAvatar">U</div>
+        </div>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="dropdown-header">
+            <div class="d-name" id="dropName">Usuario</div>
+            <div class="d-role" id="dropRole">Estudiante</div>
+          </div>
+          <a class="dropdown-item" href="perfil.html">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Mi Perfil
+          </a>
+          <a class="dropdown-item" href="historial.html">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z"/><path d="M12 8v4l3 3"/></svg>
+            Historial
+          </a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item danger" id="dropLogout">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            Cerrar sesión
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- Banner bienvenida -->
+    <section class="welcome-banner">
+      <div class="welcome-title">Bienvenido, <span id="welcomeName">Estudiante</span></div>
+      <div class="welcome-text" id="welcomeText">Tu progreso en DUNAB. Sigue acumulando puntos asistiendo a encuentros para acercarte a la meta de graduación.</div>
+      <button class="welcome-cta" onclick="generarReporteEstadoCuenta(event)">Ver Estado de Cuenta</button>
+    </section>
+
+    <!-- ── ROW 1 ── -->
+    <div class="grid-top">
+
+      <!-- Balance DUNAB -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Balance DUNAB</div>
+            <div class="card-subtitle" id="balanceSubtitle">Cargando…</div>
+          </div>
+          <span class="badge badge-up" id="rankBadge">—</span>
+        </div>
+        <div class="balance-value" id="balanceValue">— DUNAB</div>
+        <div class="chart-wrap"><canvas id="lineChart"></canvas></div>
+        <div class="legend">
+          <div class="legend-item"><div class="legend-dot" style="background:var(--unab-red)"></div>Evolución reciente</div>
+        </div>
+      </div>
+
+      <!-- Progreso de Graduación -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Progreso de Graduación</div>
+            <div class="card-subtitle">Meta: 10.000 DUNAB</div>
+          </div>
+          <a class="view-report" href="#" onclick="generarReporteEstadoCuenta(event)">Ver Reporte</a>
+        </div>
+        <div class="grad-ring-wrap">
+          <div class="grad-ring">
+            <canvas id="ringChart" width="130" height="130"></canvas>
+            <div class="grad-ring-pct" id="ringPct">0%</div>
+          </div>
+          <div class="grad-req-list" id="gradReqList">
+            <div class="grad-req-item">
+              <span class="grad-req-label"><span class="grad-req-dot" style="background:var(--unab-red)"></span>Acumulado</span>
+              <span class="grad-req-val" id="gradAcumulado">0 D</span>
+            </div>
+            <div class="grad-req-item">
+              <span class="grad-req-label"><span class="grad-req-dot" style="background:var(--unab-red-light)"></span>Faltante</span>
+              <span class="grad-req-val" id="gradFaltante">10.000 D</span>
+            </div>
+            <div class="grad-req-item">
+              <span class="grad-req-label"><span class="grad-req-dot" style="background:var(--amber)"></span>Racha activa</span>
+              <span class="grad-req-val" id="gradRacha">0 días</span>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-secondary btn-sm" style="width:100%" onclick="window.location.href='encuentros.html'">Buscar nuevos encuentros</button>
+      </div>
+    </div>
+
+    <!-- ── ROW 2 ── -->
+    <div class="grid-bottom">
+
+      <!-- Distribución por Encuentro -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Distribución por Encuentro</div>
+            <div class="card-subtitle" id="donutSubtitle">Cargando…</div>
+          </div>
+        </div>
+        <div class="donut-wrap">
+          <canvas id="donutChart"></canvas>
+          <div class="donut-center">
+            <div class="donut-center-val" id="donutTotal">—</div>
+            <div class="donut-center-lbl">total</div>
+          </div>
+        </div>
+        <div class="donut-legend">
+          <div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:#8C1D40"></div>Cafetería del L</div><span class="donut-pct" id="pctCafeteria">0%</span></div>
+          <div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:#C0394E"></div>Clase</div><span class="donut-pct" id="pctClase">0%</span></div>
+          <div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:#E8768A"></div>Play en Banú</div><span class="donut-pct" id="pctPlay">0%</span></div>
+          <div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:#F4B8C3"></div>Biblioteca</div><span class="donut-pct" id="pctBiblioteca">0%</span></div>
+          <div class="donut-legend-item"><div class="donut-legend-left"><div class="donut-legend-dot" style="background:#FAE0E4"></div>CSU</div><span class="donut-pct" id="pctCSU">0%</span></div>
+        </div>
+      </div>
+
+      <!-- Actividad Reciente -->
+      <div class="card">
+        <div class="card-header">
+          <div>
+            <div class="card-title">Actividad Reciente</div>
+            <div class="card-subtitle">Últimas transacciones registradas</div>
+          </div>
+          <a class="view-report" href="historial.html">Ver Todo</a>
+        </div>
+        <div class="tx-list" id="txList">
+          <div style="text-align:center;padding:32px 16px;color:var(--text-light)">
+            <div style="font-size:32px;margin-bottom:8px">⏳</div>
+            <div style="font-size:13px">Cargando transacciones…</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── ROW 3: Mini-Feed ── -->
+    <div class="card mini-feed-card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">📣 Feed de la comunidad</div>
+          <div class="card-subtitle" id="miniFeedSubtitle">Actividad reciente en DUNAB</div>
+        </div>
+        <a class="view-report" href="feed.html">Ver todo el feed →</a>
+      </div>
+      <div class="mini-feed-list" id="miniFeedList">
+        <div class="mini-feed-loading">
+          <span>⏳</span> Cargando actividad…
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- FAB Nuevo Encuentro (solo admin) -->
+<button class="btn-fab" id="fabNuevoEncuentro" style="display:none" onclick="window.location.href='gestionar-encuentros.html'">
+  <span style="font-size:20px;line-height:1">+</span> Nuevo Encuentro
+</button>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/theme.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  DASHBOARD — Integración API DUNAB
+// ═══════════════════════════════════════════════════════════════════════════
+const EMOJI_TIPO = {
+  INGRESO: '💚', EGRESO: '🔴',
+  TRANSFERENCIA_ENVIADA: '💸', TRANSFERENCIA_RECIBIDA: '💰',
+  PENALIZACION: '⚠️', RACHA_BONUS: '🔥'
+};
+const BG_TIPO = {
+  INGRESO: '#E8F5E9', EGRESO: '#FDE8ED',
+  TRANSFERENCIA_ENVIADA: '#FFF3E0', TRANSFERENCIA_RECIBIDA: '#E8F5E9',
+  PENALIZACION: '#FDE8ED', RACHA_BONUS: '#FFF8E1'
+};
+const LUGARES_VALIDOS = ['Cafetería del L','Clase','Play en Banú','Biblioteca','CSU'];
+const LABEL_TIPO = {
+  INGRESO: 'Ingreso', EGRESO: 'Egreso',
+  TRANSFERENCIA_ENVIADA: 'Transferencia enviada',
+  TRANSFERENCIA_RECIBIDA: 'Transferencia recibida',
+  PENALIZACION: 'Penalización', RACHA_BONUS: 'Bonus de racha'
+};
+function esNegativo(tipo) { return ['EGRESO','TRANSFERENCIA_ENVIADA','PENALIZACION'].includes(tipo); }
+
+// ── Charts ─────────────────────────────────────────────────────────────
+const chartOpts = {
+  responsive: true, maintainAspectRatio: false,
+  plugins: { legend: { display: false } },
+  scales: {
+    x: { grid: { display: false }, ticks: { font: { size: 10 }, color: '#9CA3AF' } },
+    y: { grid: { color: 'rgba(140,140,140,0.12)' }, ticks: { font: { size: 10 }, color: '#9CA3AF' } }
+  }
+};
+
+const lineChart = new Chart(document.getElementById('lineChart').getContext('2d'), {
+  type: 'line',
+  data: { labels: [], datasets: [
+    { data: [], borderColor: '#8C1D40', backgroundColor: 'rgba(140,29,64,.12)',
+      borderWidth: 2.5, fill: true, tension: 0.4, pointRadius: 3, pointBackgroundColor: '#8C1D40' }
+  ]},
+  options: chartOpts
+});
+
+const donutChart = new Chart(document.getElementById('donutChart').getContext('2d'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Cafetería del L','Clase','Play en Banú','Biblioteca','CSU','Otro'],
+    datasets: [{ data: [0,0,0,0,0,0],
+      backgroundColor: ['#8C1D40','#C0394E','#E8768A','#F4B8C3','#FAE0E4','#D1D5DB'],
+      borderWidth: 0, hoverOffset: 6 }]
+  },
+  options: { responsive: true, maintainAspectRatio: false, cutout: '72%',
+    plugins: { legend: { display: false }, tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } } } }
+});
+
+// Ring de progreso (donut simple con %)
+const ringChart = new Chart(document.getElementById('ringChart').getContext('2d'), {
+  type: 'doughnut',
+  data: { datasets: [{ data: [0, 100], backgroundColor: ['#8C1D40','rgba(140,29,64,0.12)'], borderWidth: 0 }] },
+  options: { responsive: false, cutout: '78%', plugins: { legend: { display: false }, tooltip: { enabled: false } } }
+});
+
+// ── Carga principal ────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const [perfil, stats, historial, miPos, todosEncuentros] = await Promise.all([
+      UsuarioAPI.getMiPerfil(),
+      TransaccionAPI.getEstadisticas().catch(() => ({ totalIngresos: 0, totalEgresos: 0 })),
+      TransaccionAPI.getHistorial().catch(() => []),
+      RankingAPI.getMiPosicion().catch(() => ({ posicion: '—', porcentajeMeta: 0 })),
+      EncuentroAPI.listar().catch(() => [])
+    ]);
+
+    // Welcome
+    const primerNombre = (perfil.nombre || '').split(' ')[0] || 'Estudiante';
+    document.getElementById('welcomeName').textContent = primerNombre;
+    if (miPos.porcentajeMeta >= 50) {
+      document.getElementById('welcomeText').textContent = `Vas excelente: ya has acumulado el ${miPos.porcentajeMeta}% de tu meta de graduación. Sigue así.`;
+    } else {
+      document.getElementById('welcomeText').textContent = `Tu progreso actual: ${miPos.porcentajeMeta}% de la meta. Inscríbete a más encuentros para subir más rápido.`;
+    }
+
+    // User chip / dropdown
+    const initials = (perfil.nombre || 'U').split(' ').map(w => w[0]).slice(0,2).join('').toUpperCase();
+    document.getElementById('topAvatar').textContent = initials;
+    document.getElementById('topUserName').textContent = (perfil.nombre || '').split(' ').slice(0,2).join(' ');
+    document.getElementById('dropName').textContent = perfil.nombre || 'Usuario';
+    document.getElementById('dropRole').textContent = perfil.rol === 'ADMIN' ? 'Administrador' : (perfil.rol === 'SUPERADMIN' ? 'Super Administrador' : 'Estudiante');
+
+    // Balance
+    document.getElementById('balanceValue').innerHTML = `${fmtNum(perfil.balanceDunab)} <span style="font-size:14px;color:var(--text-secondary);font-weight:500">DUNAB</span>`;
+    document.getElementById('balanceSubtitle').textContent = `Total ingresos: ${fmtNum(stats.totalIngresos || 0)} D · Egresos: ${fmtNum(stats.totalEgresos || 0)} D`;
+    document.getElementById('rankBadge').textContent = `#${miPos.posicion} en ranking`;
+
+    // Progreso meta
+    const META = 10000;
+    const acumulado = perfil.balanceDunab || 0;
+    const faltan = Math.max(0, META - acumulado);
+    const pct = Math.min(100, (acumulado / META) * 100);
+    document.getElementById('ringPct').textContent = pct.toFixed(1).replace(/\.0$/,'') + '%';
+    document.getElementById('gradAcumulado').textContent = fmtNum(acumulado) + ' D';
+    document.getElementById('gradFaltante').textContent  = faltan > 0 ? fmtNum(faltan) + ' D' : '¡Logrado!';
+    document.getElementById('gradRacha').textContent     = (perfil.rachaDias || 0) + ' días';
+    ringChart.data.datasets[0].data = [pct, Math.max(0.01, 100 - pct)];
+    ringChart.update();
+
+    // Historial
+    const txList = document.getElementById('txList');
+    if (!historial.length) {
+      txList.innerHTML = `
+        <div style="text-align:center;padding:32px 16px;color:var(--text-light)">
+          <div style="font-size:36px;margin-bottom:8px">💤</div>
+          <div style="font-size:14px">Aún no hay transacciones.<br>¡Inscríbete a un encuentro para ganar DUNAB!</div>
+        </div>`;
+    } else {
+      txList.innerHTML = historial.slice(0, 5).map(tx => `
+        <div class="tx-item">
+          <div class="tx-icon" style="background:${BG_TIPO[tx.tipo] || '#F3F4F6'}">${EMOJI_TIPO[tx.tipo] || '📋'}</div>
+          <div class="tx-info">
+            <div class="tx-name">${tx.descripcion || tx.tipo}</div>
+            <div class="tx-type">${fmtFecha(tx.creadoEn)}</div>
+          </div>
+          <span class="tx-amount ${esNegativo(tx.tipo) ? 'neg' : 'pos'}">
+            ${esNegativo(tx.tipo) ? '−' : '+'}${fmtNum(tx.monto)} D
+            <span class="tx-state">${LABEL_TIPO[tx.tipo] || ''}</span>
+          </span>
+        </div>`).join('');
+    }
+
+    // Line chart: evolución del balance (últimas 10 transacciones)
+    if (historial.length > 0) {
+      const ultimas = [...historial].reverse().slice(-10);
+      lineChart.data.labels = ultimas.map((_, i) => `#${i + 1}`);
+      lineChart.data.datasets[0].data = ultimas.map(tx => tx.balancePost);
+      lineChart.update();
+
+      // Donut: distribución por lugar
+      const cats = { 'Cafetería del L': 0, 'Clase': 0, 'Play en Banú': 0, 'Biblioteca': 0, 'CSU': 0, 'Otro': 0 };
+      const ingresos = historial.filter(tx => !esNegativo(tx.tipo));
+      ingresos.forEach(tx => {
+        const desc = tx.descripcion || '';
+        let key = LUGARES_VALIDOS.find(k => desc.toLowerCase().includes(k.toLowerCase()));
+        if (!key && todosEncuentros.length) {
+          const enc = todosEncuentros.find(e => e.nombre && desc.includes(e.nombre));
+          if (enc && enc.lugar) {
+            key = LUGARES_VALIDOS.find(k => k.toLowerCase() === (enc.lugar || '').toLowerCase());
+          }
+        }
+        cats[key || 'Otro']++;
+      });
+      const totalTx = ingresos.length;
+      const catVals = Object.values(cats);
+      donutChart.data.datasets[0].data = catVals;
+      donutChart.update();
+      document.getElementById('donutTotal').textContent = totalTx || '0';
+
+      const pctIds = ['pctCafeteria','pctClase','pctPlay','pctBiblioteca','pctCSU'];
+      catVals.slice(0, 5).forEach((v, i) => {
+        const el = document.getElementById(pctIds[i]);
+        if (el) el.textContent = totalTx > 0 ? Math.round(v / totalTx * 100) + '%' : '0%';
+      });
+
+      const fechas = ingresos.map(t => new Date(t.creadoEn)).sort((a,b) => a-b);
+      if (fechas.length) {
+        const desde = fechas[0].toLocaleDateString('es-CO', { day:'2-digit', month:'short' });
+        const hasta = fechas[fechas.length-1].toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+        document.getElementById('donutSubtitle').textContent = `${desde} – ${hasta}`;
+      } else {
+        document.getElementById('donutSubtitle').textContent = 'Sin transacciones aún';
+      }
+    } else {
+      document.getElementById('donutSubtitle').textContent = 'Sin transacciones aún';
+    }
+
+    // Cache
+    Auth.setUser({
+      id: perfil.id, nombre: perfil.nombre, correo: perfil.correo,
+      rol: perfil.rol, balanceDunab: perfil.balanceDunab,
+      temaPreferencia: perfil.temaPreferencia || 'CLARO'
+    });
+
+  } catch (err) {
+    console.error('Error cargando dashboard:', err);
+    showToast('No se pudo conectar con el servidor. Verifica que el backend esté activo.', 'error');
+  }
+});
+
+// ── Dropdown usuario ──────────────────────────────────────────────────
+(function initDropdown() {
+  const btn = document.getElementById('userChipBtn');
+  const dropdown = document.getElementById('userDropdown');
+  const logout = document.getElementById('dropLogout');
+  if (!btn || !dropdown) return;
+  btn.addEventListener('click', e => { e.stopPropagation(); dropdown.classList.toggle('open'); });
+  document.addEventListener('click', () => dropdown.classList.remove('open'));
+  dropdown.addEventListener('click', e => e.stopPropagation());
+  if (logout) logout.addEventListener('click', () => Auth.logout());
+})();
+
+// ── Mostrar enlaces de admin según rol ────────────────────────────────
+(function showAdminLinks() {
+  const user = Auth.getUser();
+  if (!user) return;
+  if (user.rol === 'ADMIN' || user.rol === 'SUPERADMIN') {
+    document.getElementById('navGestionarEstudiantes')?.classList.add('visible');
+    document.getElementById('navGestionarEncuentros')?.classList.add('visible');
+    document.getElementById('fabNuevoEncuentro').style.display = 'inline-flex';
+  }
+  if (user.rol === 'SUPERADMIN') {
+    document.getElementById('navGestionarAdmins')?.classList.add('visible');
+  }
+})();
+
+// ── Búsqueda en topnav: filtra encuentros y manda a la página de encuentros ──
+(function initSearch() {
+  const input = document.getElementById('topSearch');
+  if (!input) return;
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && input.value.trim()) {
+      const q = encodeURIComponent(input.value.trim());
+      window.location.href = `encuentros.html?q=${q}`;
+    }
+  });
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
+//  REPORTE PDF — Estado de Cuenta DUNAB completo
+// ═══════════════════════════════════════════════════════════════════════════
+async function generarReporteEstadoCuenta(ev) {
+  if (ev) ev.preventDefault();
+  if (typeof window.jspdf === 'undefined') {
+    showToast('La librería de PDF aún no se cargó. Espera unos segundos e intenta de nuevo.', 'error');
+    return;
+  }
+  showToast('📄 Generando reporte PDF...', 'info');
+  try {
+    const [perfil, stats, historial, miPos, todosEncuentros] = await Promise.all([
+      UsuarioAPI.getMiPerfil(),
+      TransaccionAPI.getEstadisticas().catch(() => ({ totalIngresos: 0, totalEgresos: 0 })),
+      TransaccionAPI.getHistorial().catch(() => []),
+      RankingAPI.getMiPosicion().catch(() => ({ posicion: '—', porcentajeMeta: 0 })),
+      EncuentroAPI.listar().catch(() => [])
+    ]);
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ unit: 'pt', format: 'a4' });
+    const PAGE_W = doc.internal.pageSize.getWidth();
+    const PAGE_H = doc.internal.pageSize.getHeight();
+    const MARGIN = 40;
+    const UNAB_RED = [140, 29, 64];
+    const UNAB_DARK = [107, 21, 48];
+    const GRAY_LIGHT = [243, 244, 246];
+    const GRAY_TEXT = [107, 114, 128];
+
+    doc.setFillColor(...UNAB_RED);
+    doc.rect(0, 0, PAGE_W, 90, 'F');
+    doc.setTextColor(255, 255, 255);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(22); doc.text('DUNAB', MARGIN, 38);
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    doc.text('Universidad Autónoma de Bucaramanga', MARGIN, 54);
+    doc.setFont('helvetica', 'bold'); doc.setFontSize(14); doc.text('Estado de Cuenta', MARGIN, 78);
+    const fechaGen = new Date().toLocaleDateString('es-CO', { day: '2-digit', month: 'long', year: 'numeric' });
+    const horaGen = new Date().toLocaleTimeString('es-CO', { hour: '2-digit', minute: '2-digit' });
+    doc.setFont('helvetica', 'normal'); doc.setFontSize(9);
+    doc.text(`Generado: ${fechaGen}`, PAGE_W - MARGIN, 50, { align: 'right' });
+    doc.text(`Hora: ${horaGen}`, PAGE_W - MARGIN, 64, { align: 'right' });
+
+    let y = 115;
+    doc.setTextColor(...UNAB_RED); doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+    doc.text('DATOS DEL ESTUDIANTE', MARGIN, y);
+    doc.setDrawColor(...UNAB_RED); doc.setLineWidth(1.5); doc.line(MARGIN, y + 3, MARGIN + 160, y + 3);
+    y += 20;
+    doc.setTextColor(50, 50, 50); doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    [
+      ['Nombre:', perfil.nombre || '—'],
+      ['Código:', perfil.codigo || '—'],
+      ['Carrera:', perfil.carrera || '—'],
+      ['Correo:', perfil.correo || '—']
+    ].forEach(([label, val]) => {
+      doc.setFont('helvetica', 'bold'); doc.text(label, MARGIN, y);
+      doc.setFont('helvetica', 'normal'); doc.text(String(val), MARGIN + 75, y);
+      y += 16;
+    });
+
+    y += 10;
+    doc.setTextColor(...UNAB_RED); doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+    doc.text('RESUMEN GENERAL', MARGIN, y);
+    doc.line(MARGIN, y + 3, MARGIN + 130, y + 3); y += 18;
+
+    const cardW = (PAGE_W - MARGIN * 2 - 24) / 4;
+    const cardH = 60;
+    const resumenCards = [
+      { label: 'Balance Actual', value: fmtNum(perfil.balanceDunab) + ' D', color: UNAB_RED },
+      { label: 'Posición Ranking', value: '#' + (miPos.posicion || '—'), color: [30, 64, 175] },
+      { label: 'Racha Activa', value: (perfil.rachaDias || 0) + ' días', color: [217, 119, 6] },
+      { label: '% Meta', value: (miPos.porcentajeMeta || 0) + '%', color: [6, 95, 70] }
+    ];
+    resumenCards.forEach((c, i) => {
+      const x = MARGIN + i * (cardW + 8);
+      doc.setFillColor(...GRAY_LIGHT); doc.roundedRect(x, y, cardW, cardH, 6, 6, 'F');
+      doc.setFontSize(8); doc.setTextColor(...GRAY_TEXT); doc.setFont('helvetica', 'normal');
+      doc.text(c.label.toUpperCase(), x + 10, y + 16);
+      doc.setFontSize(16); doc.setTextColor(...c.color); doc.setFont('helvetica', 'bold');
+      doc.text(String(c.value), x + 10, y + 42);
+    });
+    y += cardH + 18;
+
+    doc.setTextColor(...UNAB_RED); doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+    doc.text('BALANCE — INGRESOS Y EGRESOS', MARGIN, y);
+    doc.line(MARGIN, y + 3, MARGIN + 230, y + 3); y += 12;
+
+    doc.autoTable({
+      startY: y,
+      head: [['Concepto', 'Valor']],
+      body: [
+        ['Total ingresos acumulados', fmtNum(stats.totalIngresos || 0) + ' D'],
+        ['Total egresos acumulados', fmtNum(stats.totalEgresos || 0) + ' D'],
+        ['Balance neto histórico', fmtNum((stats.totalIngresos || 0) - (stats.totalEgresos || 0)) + ' D'],
+        ['Total de transacciones', historial.length]
+      ],
+      styles: { fontSize: 10, cellPadding: 6 },
+      headStyles: { fillColor: UNAB_RED, textColor: 255, fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [250, 250, 252] },
+      columnStyles: { 1: { halign: 'right', fontStyle: 'bold' } },
+      margin: { left: MARGIN, right: MARGIN }
+    });
+    y = doc.lastAutoTable.finalY + 22;
+
+    if (y > PAGE_H - 220) { doc.addPage(); y = MARGIN; }
+    doc.setTextColor(...UNAB_RED); doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+    doc.text('PROGRESO HACIA LA GRADUACIÓN', MARGIN, y);
+    doc.line(MARGIN, y + 3, MARGIN + 230, y + 3); y += 22;
+
+    const META = 10000;
+    const acumulado = perfil.balanceDunab || 0;
+    const faltan = Math.max(0, META - acumulado);
+    const pct = Math.min(100, (acumulado / META) * 100);
+    doc.setTextColor(50, 50, 50); doc.setFont('helvetica', 'normal'); doc.setFontSize(10);
+    doc.text(`Acumulado: ${fmtNum(acumulado)} de ${fmtNum(META)} DUNAB`, MARGIN, y);
+    doc.text(`${pct.toFixed(1)}% completado`, PAGE_W - MARGIN, y, { align: 'right' });
+    y += 8;
+    const barW = PAGE_W - MARGIN * 2;
+    doc.setFillColor(229, 231, 235); doc.roundedRect(MARGIN, y, barW, 16, 4, 4, 'F');
+    if (pct > 0) { doc.setFillColor(...UNAB_RED); doc.roundedRect(MARGIN, y, (barW * pct) / 100, 16, 4, 4, 'F'); }
+    y += 26;
+    doc.setFontSize(10); doc.setTextColor(...UNAB_DARK); doc.setFont('helvetica', 'bold');
+    doc.text(faltan === 0 ? '🎓 ¡Meta alcanzada! Felicidades.' : `Te faltan ${fmtNum(faltan)} DUNAB para alcanzar la meta.`, MARGIN, y);
+    y += 24;
+
+    if (historial.length > 0) {
+      if (y > PAGE_H - 150) { doc.addPage(); y = MARGIN; }
+      doc.setTextColor(...UNAB_RED); doc.setFont('helvetica', 'bold'); doc.setFontSize(12);
+      doc.text('HISTORIAL DE TRANSACCIONES', MARGIN, y);
+      doc.line(MARGIN, y + 3, MARGIN + 220, y + 3); y += 12;
+      doc.autoTable({
+        startY: y,
+        head: [['Fecha', 'Tipo', 'Descripción', 'Monto', 'Saldo']],
+        body: historial.map(tx => [
+          fmtFecha(tx.creadoEn),
+          LABEL_TIPO[tx.tipo] || tx.tipo,
+          (tx.descripcion || '—').substring(0, 60),
+          (esNegativo(tx.tipo) ? '−' : '+') + fmtNum(tx.monto) + ' D',
+          fmtNum(tx.balancePost || 0) + ' D'
+        ]),
+        styles: { fontSize: 9, cellPadding: 5, overflow: 'linebreak' },
+        headStyles: { fillColor: UNAB_RED, textColor: 255, fontStyle: 'bold' },
+        alternateRowStyles: { fillColor: [250, 250, 252] },
+        columnStyles: { 0:{cellWidth:70}, 1:{cellWidth:95}, 2:{cellWidth:'auto'}, 3:{cellWidth:70,halign:'right',fontStyle:'bold'}, 4:{cellWidth:60,halign:'right'} },
+        didParseCell: (data) => {
+          if (data.column.index === 3 && data.section === 'body') {
+            const raw = String(data.cell.raw || '');
+            if (raw.startsWith('−')) data.cell.styles.textColor = [185, 28, 28];
+            else                     data.cell.styles.textColor = [6, 95, 70];
+          }
+        },
+        margin: { left: MARGIN, right: MARGIN }
+      });
+    }
+
+    const totalPages = doc.internal.getNumberOfPages();
+    for (let i = 1; i <= totalPages; i++) {
+      doc.setPage(i);
+      doc.setDrawColor(229, 231, 235); doc.setLineWidth(0.5);
+      doc.line(MARGIN, PAGE_H - 32, PAGE_W - MARGIN, PAGE_H - 32);
+      doc.setFont('helvetica', 'normal'); doc.setFontSize(8); doc.setTextColor(...GRAY_TEXT);
+      doc.text('DUNAB — Gestión de Dinero UNAB', MARGIN, PAGE_H - 18);
+      doc.text(`Página ${i} de ${totalPages}`, PAGE_W - MARGIN, PAGE_H - 18, { align: 'right' });
+    }
+
+    const filename = `estado_cuenta_${(perfil.codigo || perfil.id || 'dunab')}_${new Date().toISOString().split('T')[0]}.pdf`;
+    doc.save(filename);
+    showToast('📄 Estado de cuenta exportado correctamente.', 'success');
+
+  } catch (err) {
+    console.error('Error generando PDF:', err);
+    showToast('Error al generar el PDF. Intenta de nuevo.', 'error');
+  }
+}
+
+/* ══════════════════════════════════════════════════════
+   MINI-FEED  —  últimos 6 eventos del feed de actividad
+   ══════════════════════════════════════════════════════ */
+
+const FEED_API = 'http://localhost:8080';
+const FEED_TIPO_ICON  = { INSCRIPCION: '📅', LOGRO: '🏅', HITO: '🎯', PUBLICACION: '💬' };
+const FEED_TIPO_COLOR = {
+  INSCRIPCION: '#3B82F6',
+  LOGRO:       '#8B5CF6',
+  HITO:        '#F59E0B',
+  PUBLICACION: 'var(--accent)'
+};
+
+function feedTimeAgo(isoStr) {
+  const diff = Math.floor((Date.now() - new Date(isoStr).getTime()) / 1000);
+  if (diff < 60)    return 'ahora mismo';
+  if (diff < 3600)  return Math.floor(diff / 60) + ' min';
+  if (diff < 86400) return Math.floor(diff / 3600) + 'h';
+  return new Date(isoStr).toLocaleDateString('es-CO', { day: 'numeric', month: 'short' });
+}
+
+function renderMiniFeedItem(ev) {
+  const icon  = FEED_TIPO_ICON[ev.tipo]  || '📌';
+  const color = FEED_TIPO_COLOR[ev.tipo] || 'var(--accent)';
+  const text  = ev.tipo === 'PUBLICACION'
+    ? `<b>${esc(ev.usuarioNombre)}</b> publicó: "${esc((ev.cuerpo||'').substring(0,60))}${ev.cuerpo?.length > 60 ? '…' : ''}"`
+    : esc(ev.mensaje || '');
+
+  return `
+    <div class="mf-item">
+      <div class="mf-icon" style="background:${color}">${icon}</div>
+      <div class="mf-body">
+        <div class="mf-text">${text}</div>
+        <div class="mf-time">${feedTimeAgo(ev.creadoEn)}</div>
+      </div>
+    </div>`;
+}
+
+function esc(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+}
+
+async function loadMiniFeed() {
+  const list = document.getElementById('miniFeedList');
+  if (!list) return;
+  try {
+    const res    = await fetch(`${FEED_API}/api/feed/mini`);
+    const events = await res.json();
+
+    if (!events.length) {
+      list.innerHTML = '<div class="mf-empty">Aún no hay actividad 🌿</div>';
+      return;
+    }
+    list.innerHTML = events.map(renderMiniFeedItem).join('');
+
+    const sub = document.getElementById('miniFeedSubtitle');
+    if (sub) sub.textContent = `${events.length} evento${events.length > 1 ? 's' : ''} reciente${events.length > 1 ? 's' : ''}`;
+
+  } catch (err) {
+    if (list) list.innerHTML = '<div class="mf-empty" style="color:var(--text-muted)">Feed no disponible</div>';
+  }
+}
+
+// Cargar mini-feed al arrancar y refrescar cada 30 s
+document.addEventListener('DOMContentLoaded', () => {
+  loadMiniFeed();
+  setInterval(loadMiniFeed, 30_000);
+});
+
+
+/* ══════════════════════════════════════════════════════
+   DROPDOWN DE NOTIFICACIONES (campana)
+   Fuente: GET /api/feed/mini  (no requiere auth)
+   ══════════════════════════════════════════════════════ */
+
+const NOTIF_TIPO_ICON = {
+  INSCRIPCION: '📅', LOGRO: '🏅', HITO: '🎯',
+  PUBLICACION: '💬', TRANSFERENCIA: '💸', PENALIZACION: '⚠️'
+};
+const NOTIF_TIPO_COLOR = {
+  INSCRIPCION:   '#3B82F6',
+  LOGRO:         '#8B5CF6',
+  HITO:          '#F59E0B',
+  PUBLICACION:   'var(--accent)',
+  TRANSFERENCIA: '#10B981',
+  PENALIZACION:  '#EF4444',
+};
+
+function renderNotifItem(ev) {
+  const icon  = NOTIF_TIPO_ICON[ev.tipo]  || '📌';
+  const color = NOTIF_TIPO_COLOR[ev.tipo] || 'var(--unab-red)';
+  const msg   = ev.tipo === 'PUBLICACION'
+    ? '<b>' + esc(ev.usuarioNombre) + '</b> publicó: "' + esc((ev.cuerpo || '').substring(0, 80)) + ((ev.cuerpo || '').length > 80 ? '…' : '') + '"'
+    : esc(ev.mensaje || 'Nuevo evento');
+  return '<div class="notif-item">'
+       + '  <div class="notif-item-icon" style="background:' + color + '">' + icon + '</div>'
+       + '  <div class="notif-item-body">'
+       + '    <div class="notif-item-msg">' + msg + '</div>'
+       + '    <div class="notif-item-time">' + feedTimeAgo(ev.creadoEn) + '</div>'
+       + '  </div>'
+       + '</div>';
+}
+
+async function loadNotifDropdown() {
+  const list  = document.getElementById('notifList');
+  const dot   = document.getElementById('notifDot');
+  const badge = document.getElementById('notifCount');
+  if (!list) return;
+
+  try {
+    const res    = await fetch(FEED_API + '/api/feed/mini');
+    if (!res.ok) throw new Error('feed error');
+    const events = await res.json();
+
+    if (!events.length) {
+      list.innerHTML      = '<div class="notif-empty">Sin notificaciones nuevas 🌿</div>';
+      dot.style.display   = 'none';
+      badge.style.display = 'none';
+      return;
+    }
+
+    list.innerHTML      = events.map(renderNotifItem).join('');
+    dot.style.display   = 'none';
+    badge.textContent   = events.length > 9 ? '9+' : events.length;
+    badge.style.display = 'flex';
+
+  } catch {
+    list.innerHTML      = '<div class="notif-empty" style="color:var(--text-muted)">No se pudo cargar 😕</div>';
+    dot.style.display   = 'block';
+    badge.style.display = 'none';
+  }
+}
+
+function initNotifDropdown() {
+  const btn      = document.getElementById('notifBtn');
+  const dropdown = document.getElementById('notifDropdown');
+  const userDrop = document.getElementById('userDropdown');
+  if (!btn || !dropdown) return;
+
+  btn.addEventListener('click', function(e) {
+    e.stopPropagation();
+    var isOpen = dropdown.classList.contains('open');
+    if (userDrop) userDrop.classList.remove('open');
+    if (isOpen) {
+      dropdown.classList.remove('open');
+    } else {
+      dropdown.classList.add('open');
+      loadNotifDropdown();
+    }
+  });
+
+  document.addEventListener('click', function(e) {
+    if (!dropdown.contains(e.target) && e.target !== btn) {
+      dropdown.classList.remove('open');
+    }
+  });
+
+  // Badge inicial sin abrir el dropdown
+  loadNotifDropdown();
+}
+
+document.addEventListener('DOMContentLoaded', initNotifDropdown);
+</script>
+
+<style>
+/* ── Dropdown de notificaciones ─────────────────── */
+.notif-wrap { position: relative; }
+
+.notif-count {
+  position: absolute; top: 4px; right: 4px;
+  min-width: 16px; height: 16px;
+  background: var(--unab-red);
+  color: #fff;
+  border-radius: 8px;
+  font-size: 9px; font-weight: 700;
+  display: flex; align-items: center; justify-content: center;
+  padding: 0 3px;
+  border: 2px solid var(--card-bg);
+  pointer-events: none;
+}
+
+.notif-dropdown {
+  display: none;
+  position: absolute; top: calc(100% + 8px); right: 0;
+  width: 320px;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--card-shadow-lg);
+  z-index: 300;
+  overflow: hidden;
+  animation: dropIn .15s ease;
+}
+.notif-dropdown.open { display: block; }
+
+.notif-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid var(--border);
+  background: var(--border-soft);
+}
+.notif-title  { font-size: 13.5px; font-weight: 700; color: var(--text-primary); }
+.notif-ver-todo {
+  font-size: 11.5px; font-weight: 600;
+  color: var(--unab-red); text-decoration: none;
+}
+.notif-ver-todo:hover { text-decoration: underline; }
+
+.notif-list { max-height: 340px; overflow-y: auto; }
+
+.notif-item {
+  display: flex; align-items: flex-start; gap: 11px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+  transition: background .12s;
+}
+.notif-item:last-child { border-bottom: none; }
+.notif-item:hover { background: var(--sidebar-hover-bg); }
+
+.notif-item-icon {
+  width: 32px; height: 32px;
+  border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 14px; flex-shrink: 0; color: #fff;
+}
+.notif-item-body { flex: 1; min-width: 0; }
+.notif-item-msg {
+  font-size: 12.5px; color: var(--text);
+  line-height: 1.45;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+.notif-item-time { font-size: 10.5px; color: var(--text-muted); margin-top: 2px; }
+
+.notif-empty, .notif-loading {
+  padding: 28px 16px;
+  text-align: center; font-size: 13px; color: var(--text-muted);
+}
+
+/* ── Mini-feed card ─────────────────────────────── */
+.mini-feed-card  { margin-top: 24px; }
+.mini-feed-list  { display: flex; flex-direction: column; gap: 0; }
+.mf-item {
+  display: flex; align-items: flex-start; gap: 12px;
+  padding: 12px 0;
+  border-bottom: 1px solid var(--border);
+}
+.mf-item:last-child { border-bottom: none; }
+.mf-icon {
+  width: 34px; height: 34px; border-radius: 50%;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 15px; flex-shrink: 0; color: #fff;
+}
+.mf-body  { flex: 1; min-width: 0; }
+.mf-text  {
+  font-size: 13px; color: var(--text); line-height: 1.45;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.mf-time  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+.mini-feed-loading, .mf-empty {
+  padding: 20px; text-align: center; font-size: 13px; color: var(--text-muted);
+}
+</style>
+
+</body>
+</html>

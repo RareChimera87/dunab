@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Encuentros – DUNAB</title>
+  
+  <script>
+    (function(){
+      try {
+        var u = JSON.parse(localStorage.getItem('dunab_user')||'null');
+        var t = (u && u.temaPreferencia) || localStorage.getItem('dunab_theme') || 'CLARO';
+        if (t === 'OSCURO') document.documentElement.setAttribute('data-theme','dark');
+      } catch(e){}
+    })();
+  </script>
+  <link rel="stylesheet" href="css/dunab-theme.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <style>
+            
+</style>
+</head>
+<body>
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo" data-auto-logo></div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+    <a class="nav-item active" href="encuentros.html"><span class="nav-icon">📅</span><span>Encuentros</span></a>
+    <a class="nav-item" href="ranking.html"><span class="nav-icon">🏆</span><span>Ranking</span></a>
+    <a class="nav-item" href="historial.html"><span class="nav-icon">⏱</span><span>Historial</span></a>
+    <a class="nav-item" href="transferencias.html"><span class="nav-icon">⇄</span><span>Transferencias</span></a>
+    <a class="nav-item" href="feed.html"><span class="nav-icon">📣</span><span>Feed</span></a>
+    <a class="nav-item" href="tienda.html"><span class="nav-icon">🛍️</span><span>Tienda</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEstudiantes" href="gestionar-estudiantes.html"><span class="nav-icon">🎓</span><span>Gestionar Estudiantes</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEncuentros" href="gestionar-encuentros.html"><span class="nav-icon">⚙</span><span>Gestionar Encuentros</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarRecompensas" href="gestionar-recompensas.html"><span class="nav-icon">🎁</span><span>Gestionar Tienda</span></a>
+    <a class="nav-item nav-item-super" id="navGestionarAdmins" href="gestionar-admins.html"><span class="nav-icon">🛡</span><span>Gestionar Admins</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <a class="nav-item" href="perfil.html"><span class="nav-icon">👤</span><span>Perfil</span></a>
+  </div>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<div class="main">
+
+  <header class="topnav">
+  <div class="search-wrap">
+    <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" placeholder="Buscar encuentros, estudiantes…" id="topSearch"/>
+  </div>
+  <div class="topnav-right">
+    <div class="user-chip-wrap">
+      <div class="user-chip" id="userChipBtn">
+        <div class="user-meta">
+          <span class="user-meta-label" data-user-faculty>Facultad de Ciencias Jurídicas y Políticas</span>
+          <span class="user-meta-name" id="topUserName" data-user-name>Usuario</span>
+        </div>
+        <div class="user-avatar" id="topAvatar" data-user-avatar>U</div>
+      </div>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="dropdown-header">
+          <div class="d-name" id="dropName" data-user-name>Usuario</div>
+          <div class="d-role" id="dropRole" data-user-role>Estudiante</div>
+        </div>
+        <a class="dropdown-item" href="perfil.html">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Mi Perfil
+        </a>
+        <a class="dropdown-item" href="historial.html">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z"/><path d="M12 8v4l3 3"/></svg>
+          Historial
+        </a>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item danger" id="dropLogout" data-logout>
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Cerrar sesión
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+  <main class="content">
+
+    <!-- Page header -->
+    <div class="page-header">
+      <h1 class="page-title">Encuentros</h1>
+    </div>
+
+    <!-- Stats strip -->
+    <div class="stats-strip">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FDE8ED">📋</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statTotal">—</div>
+          <div class="stat-lbl">Encuentros totales</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#D1FAE5">✅</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statInscritos">—</div>
+          <div class="stat-lbl">Inscrito en este momento</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#DBEAFE">🕐</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statProximos">—</div>
+          <div class="stat-lbl">Próximos encuentros</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FEF3C7">💰</div>
+        <div class="stat-info">
+          <div class="stat-val" id="statBalance">— D</div>
+          <div class="stat-lbl">DUNAB disponibles</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <input class="search-inline" type="text" id="globalSearch"
+             placeholder="🔍 Buscar encuentro o lugar…" oninput="filterTable()"/>
+      <div class="filter-divider"></div>
+      <div class="filter-group">
+        <span class="filter-label">Lugar</span>
+        <select class="filter-select" id="filterLugar" onchange="filterTable()">
+          <option value="">Todos los lugares</option>
+          <option value="Cafetería del L">Cafetería del L</option>
+          <option value="Clase">Clase</option>
+          <option value="Play en Banú">Play en Banú</option>
+          <option value="Biblioteca">Biblioteca</option>
+          <option value="CSU">CSU</option>
+        </select>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-group">
+        <span class="filter-label">Fecha</span>
+        <select class="filter-select" id="filterFecha" onchange="filterTable()">
+          <option value="">Cualquier fecha</option>
+          <option value="hoy">Hoy</option>
+          <option value="semana">Esta semana</option>
+          <option value="mes">Este mes</option>
+        </select>
+      </div>
+      <div class="filter-divider"></div>
+      <div class="filter-group">
+        <span class="filter-label">Estado</span>
+      </div>
+      <div class="chip-group" id="chipGroup">
+        <div class="chip active" data-estado="" onclick="setChip(this, '')">Todos</div>
+        <div class="chip" data-estado="disponible" onclick="setChip(this, 'disponible')">Disponible</div>
+        <div class="chip" data-estado="inscrito" onclick="setChip(this, 'inscrito')">Inscrito</div>
+        <div class="chip" data-estado="proximo" onclick="setChip(this, 'proximo')">Próximo</div>
+        <div class="chip" data-estado="lleno" onclick="setChip(this, 'lleno')">Lleno</div>
+      </div>
+      <button class="btn-clear" onclick="clearFilters()">✕ Limpiar</button>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <div>
+          <span class="table-card-title">Lista de Encuentros</span>
+          <span class="table-count" id="tableCount" style="margin-left:8px">— 12 resultados</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px">
+          <div class="view-toggle">
+            <button class="toggle-btn active" title="Vista tabla">
+              <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 10h18M3 14h18M3 6h18M3 18h18"/></svg>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table id="encTable">
+          <thead>
+            <tr>
+              <th onclick="sortTable(0)">Encuentro <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(1)">Lugar <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(2)">Fecha <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(3)">DUNAB <span class="sort-icon">↕</span></th>
+              <th onclick="sortTable(4)">Cupos <span class="sort-icon">↕</span></th>
+              <th>Estado</th>
+              <th>Acción</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody">
+            <!-- Filas generadas por JS -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <span class="pag-info" id="pagInfo">Mostrando 1–12 de 12</span>
+        <div class="pag-btns">
+          <button class="pag-btn"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button class="pag-btn active">1</button>
+          <button class="pag-btn">2</button>
+          <button class="pag-btn"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ════════════ MODAL CREAR / EDITAR ════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">Nuevo Encuentro</span>
+      <button class="modal-close" onclick="closeModal()">✕</button>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Nombre del Encuentro</label>
+        <input type="text" id="mNombre" placeholder="Ej. Sesión de estudio grupal"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Lugar</label>
+        <select id="mLugar">
+          <option value="Cafetería del L">Cafetería del L</option>
+          <option value="Clase">Clase</option>
+          <option value="Play en Banú">Play en Banú</option>
+          <option value="Biblioteca">Biblioteca</option>
+          <option value="CSU">CSU</option>
+        </select>
+      </div>
+      <div class="modal-field">
+        <label>DUNAB a otorgar</label>
+        <input type="number" id="mDunab" placeholder="Ej. 150" min="0"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Fecha</label>
+        <input type="date" id="mFecha"/>
+      </div>
+      <div class="modal-field">
+        <label>Hora</label>
+        <input type="time" id="mHora"/>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Cupos máximos</label>
+        <input type="number" id="mCupos" placeholder="Ej. 30" min="1"/>
+      </div>
+      <div class="modal-field">
+        <label>Estado</label>
+        <select id="mEstado">
+          <option value="disponible">Disponible</option>
+          <option value="proximo">Próximo</option>
+          <option value="lleno">Lleno</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-row">
+      <div class="modal-field">
+        <label>Descripción</label>
+        <textarea id="mDesc" placeholder="Descripción breve del encuentro…"></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+      <button class="btn-modal-confirm" onclick="saveEncuentro()">Guardar Encuentro</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+const ICONS = {
+  'Cafetería del L': { emoji: '☕', bg: '#FDE8ED' },
+  'Clase':           { emoji: '📚', bg: '#E8F5E9' },
+  'Play en Banú':    { emoji: '🎮', bg: '#FFF3E0' },
+  'Biblioteca':      { emoji: '🏛️', bg: '#E3F2FD' },
+  'CSU':             { emoji: '🎓', bg: '#F3E5F5' },
+};
+
+let encounters = []; // cargado desde la API
+
+
+// Normaliza API → formato interno para renderTable()
+function _normEnc(e) {
+  const estadoMap = { ACTIVO:'disponible', PROXIMO:'proximo', LLENO:'lleno', INACTIVO:'inactivo', BORRADOR:'borrador' };
+  return {
+    id:        e.id,
+    nombre:    e.nombre,
+    lugar:     e.lugar,
+    fecha:     e.fecha || '',
+    hora:      e.hora || (e.horaInicio ? e.horaInicio.substring(0,5) : '00:00'),
+    horaFin:   e.horaFin || '',
+    dunab:     e.dunabRecompensa || e.dunab || 0,
+    cuposMax:  e.cuposMax || 0,
+    cuposOcup: e.cuposOcupados || e.cuposOcup || 0,
+    estado:    estadoMap[e.estado] || (e.estado||'disponible').toLowerCase(),
+    inscrito:  e.inscrito || false,
+    desc:      e.descripcion || e.desc || ''
+  };
+}
+
+let activeEstado = '';
+let sortCol = -1, sortAsc = true;
+
+// ─── RENDER ────────────────────────────────────────────────────────────────
+function renderTable(data) {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+  data.forEach(e => {
+    const ic = ICONS[e.lugar] || { emoji:'📍', bg:'#F3F4F6' };
+    const pct = Math.round((e.cuposOcup / e.cuposMax) * 100);
+    const cuposLibres = e.cuposMax - e.cuposOcup;
+    const fillColor = pct >= 90 ? '#EF4444' : pct >= 60 ? '#F59E0B' : '#10B981';
+    const dateObj = new Date(e.fecha + 'T00:00:00');
+    const dateStr = dateObj.toLocaleDateString('es-CO', { day:'2-digit', month:'short', year:'numeric' });
+
+    const badgeMap = {
+      disponible: `<span class="badge badge-disponible"><span class="badge-dot"></span>Disponible</span>`,
+      inscrito:   `<span class="badge badge-inscrito"><span class="badge-dot"></span>Inscrito</span>`,
+      lleno:      `<span class="badge badge-lleno"><span class="badge-dot"></span>Lleno</span>`,
+      proximo:    `<span class="badge badge-proximo"><span class="badge-dot"></span>Próximo</span>`,
+    };
+    const displayEstado = e.inscrito ? 'inscrito' : e.estado;
+
+    let acciones = '';
+    if (e.inscrito) {
+      acciones = `<div class="action-group">
+        <button class="btn-cancelar" onclick="cancelar(${e.id})">Cancelar</button>
+        <button class="btn-detalle" onclick="verDetalle(${e.id})"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></button>
+      </div>`;
+    } else if (e.estado === 'lleno') {
+      acciones = `<div class="action-group">
+        <button class="btn-inscribir" disabled>Sin cupos</button>
+        <button class="btn-detalle" onclick="verDetalle(${e.id})"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></button>
+      </div>`;
+    } else {
+      acciones = `<div class="action-group">
+        <button class="btn-inscribir" onclick="inscribir(${e.id})">Inscribirse</button>
+        <button class="btn-detalle" onclick="verDetalle(${e.id})"><svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 16v-4M12 8h.01"/></svg></button>
+      </div>`;
+    }
+
+    const tr = document.createElement('tr');
+    tr.dataset.lugar = e.lugar;
+    tr.dataset.fecha = e.fecha;
+    tr.dataset.estado = displayEstado;
+    tr.dataset.nombre = e.nombre.toLowerCase();
+    tr.innerHTML = `
+      <td>
+        <div class="cell-encuentro">
+          <div class="enc-icon" style="background:${ic.bg}">${ic.emoji}</div>
+          <div>
+            <div class="enc-name">${e.nombre}</div>
+            <div class="enc-sub">ID #${String(e.id).padStart(4,'0')}</div>
+          </div>
+        </div>
+      </td>
+      <td>
+        <div class="cell-lugar">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg>
+          ${e.lugar}
+        </div>
+      </td>
+      <td>
+        <div class="cell-fecha">${dateStr}</div>
+        <div class="cell-hora">🕐 ${e.hora}</div>
+      </td>
+      <td><span class="dunab-badge">💰 +${e.dunab}</span></td>
+      <td>
+        <div class="cupos-wrap">
+          <span style="font-size:12.5px;color:var(--text-secondary)">${cuposLibres} / ${e.cuposMax} libres</span>
+          <div class="cupos-bar"><div class="cupos-fill" style="width:${pct}%;background:${fillColor}"></div></div>
+        </div>
+      </td>
+      <td>${badgeMap[displayEstado] || badgeMap['disponible']}</td>
+      <td>${acciones}</td>`;
+    tbody.appendChild(tr);
+  });
+  document.getElementById('tableCount').textContent = `— ${data.length} resultado${data.length !== 1 ? 's' : ''}`;
+  document.getElementById('pagInfo').textContent = `Mostrando 1–${data.length} de ${data.length}`;
+}
+
+// ─── FILTER ────────────────────────────────────────────────────────────────
+function filterTable() {
+  const search = document.getElementById('globalSearch').value.toLowerCase();
+  const lugar  = document.getElementById('filterLugar').value;
+  const fecha  = document.getElementById('filterFecha').value;
+
+  const today = new Date(); today.setHours(0,0,0,0);
+  const weekEnd = new Date(today); weekEnd.setDate(today.getDate() + 7);
+  const monthEnd = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+
+  let filtered = encounters.filter(e => {
+    const displayEstado = e.inscrito ? 'inscrito' : e.estado;
+    const matchSearch  = !search  || e.nombre.toLowerCase().includes(search) || e.lugar.toLowerCase().includes(search);
+    const matchLugar   = !lugar   || e.lugar === lugar;
+    const matchEstado  = !activeEstado || displayEstado === activeEstado;
+    const eDate = new Date(e.fecha + 'T00:00:00');
+    let matchFecha = true;
+    if (fecha === 'hoy')   matchFecha = eDate.toDateString() === today.toDateString();
+    if (fecha === 'semana') matchFecha = eDate >= today && eDate <= weekEnd;
+    if (fecha === 'mes')   matchFecha = eDate >= today && eDate <= monthEnd;
+    return matchSearch && matchLugar && matchEstado && matchFecha;
+  });
+  renderTable(filtered);
+}
+
+function setChip(el, estado) {
+  document.querySelectorAll('#chipGroup .chip').forEach(c => c.classList.remove('active'));
+  el.classList.add('active');
+  activeEstado = estado;
+  filterTable();
+}
+
+function clearFilters() {
+  document.getElementById('globalSearch').value = '';
+  document.getElementById('filterLugar').value = '';
+  document.getElementById('filterFecha').value = '';
+  activeEstado = '';
+  document.querySelectorAll('#chipGroup .chip').forEach(c => c.classList.remove('active'));
+  document.querySelector('#chipGroup .chip[data-estado=""]').classList.add('active');
+  renderTable(encounters);
+}
+
+// ─── SORT ──────────────────────────────────────────────────────────────────
+function sortTable(col) {
+  if (sortCol === col) sortAsc = !sortAsc; else { sortCol = col; sortAsc = true; }
+  document.querySelectorAll('th').forEach((th,i) => {
+    th.classList.toggle('sorted', i === col);
+    th.querySelector('.sort-icon').textContent = i === col ? (sortAsc ? '↑' : '↓') : '↕';
+  });
+  const keys = ['nombre','lugar','fecha','dunab','cuposMax'];
+  const key = keys[col];
+  const sorted = [...encounters].sort((a,b) => {
+    let va = a[key], vb = b[key];
+    if (typeof va === 'string') va = va.toLowerCase(), vb = vb.toLowerCase();
+    return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+  });
+  renderTable(sorted);
+}
+
+// ─── ACCIONES ──────────────────────────────────────────────────────────────
+async function inscribir(id) {
+  try {
+    await InscripcionAPI.inscribir(id);
+    showToast('success', '✅', '¡Inscripción realizada! Ganarás DUNAB al asistir.');
+    await _reloadEncuentros();
+  } catch (err) {
+    showToast('error', '❌', err.message || 'No se pudo inscribir.');
+  }
+}
+
+async function cancelar(id) {
+  try {
+    await InscripcionAPI.cancelar(id);
+    showToast('warning', '⚠️', 'Inscripción cancelada. Pueden aplicarse penalizaciones.');
+    await _reloadEncuentros();
+  } catch (err) {
+    showToast('error', '❌', err.message || 'No se pudo cancelar.');
+  }
+}
+
+async function _reloadEncuentros() {
+  const lista = await EncuentroAPI.listar();
+  encounters = lista.map(_normEnc);
+  filterTable();
+}
+
+function verDetalle(id) {
+  const e = encounters.find(x => x.id === id);
+  if (!e) return;
+  showToast('', 'ℹ️', `${e.nombre} — ${e.lugar}, ${e.hora} · ${e.dunab} DUNAB`);
+}
+
+// ─── MODAL ─────────────────────────────────────────────────────────────────
+function openModal(mode) {
+  document.getElementById('modalTitle').textContent = mode === 'crear' ? 'Nuevo Encuentro' : 'Editar Encuentro';
+  document.getElementById('modalOverlay').classList.add('open');
+}
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+function saveEncuentro() {
+  const nombre = document.getElementById('mNombre').value.trim();
+  const lugar  = document.getElementById('mLugar').value;
+  const dunab  = parseInt(document.getElementById('mDunab').value) || 0;
+  const fecha  = document.getElementById('mFecha').value;
+  const hora   = document.getElementById('mHora').value || '00:00';
+  const cupos  = parseInt(document.getElementById('mCupos').value) || 20;
+  const estado = document.getElementById('mEstado').value;
+  if (!nombre || !fecha) { showToast('error','❌','Por favor completa nombre y fecha.'); return; }
+  const newId = Math.max(...encounters.map(e => e.id)) + 1;
+  encounters.push({ id:newId, nombre, lugar, fecha, hora, dunab, cuposMax:cupos, cuposOcup:0, estado, inscrito:false });
+  closeModal();
+  filterTable();
+  showToast('success','✅',`Encuentro "${nombre}" creado con ${dunab} DUNAB.`);
+  document.getElementById('mNombre').value = '';
+  document.getElementById('mDunab').value  = '';
+  document.getElementById('mFecha').value  = '';
+  document.getElementById('mHora').value   = '';
+  document.getElementById('mCupos').value  = '';
+}
+
+// close modal on overlay click
+document.getElementById('modalOverlay').addEventListener('click', function(e) {
+  if (e.target === this) closeModal();
+});
+
+// ─── TOAST ─────────────────────────────────────────────────────────────────
+function showToast(type, icon, msg) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast' + (type ? ' ' + type : '');
+  t.innerHTML = `<span class="toast-icon">${icon}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3800);
+}
+
+// ─── INIT — datos vendrán del DOMContentLoaded tras cargar api.js ──────────
+document.getElementById('tableBody').innerHTML =
+  '<tr><td colspan="9" style="text-align:center;padding:24px;color:#9CA3AF">Cargando encuentros...</td></tr>';
+</script>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/theme.js"></script>
+<script>
+// ── Integración API DUNAB — Encuentros ─────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const [lista, perfil] = await Promise.all([
+      EncuentroAPI.listar(),
+      UsuarioAPI.getMiPerfil()
+    ]);
+
+    encounters = lista.map(_normEnc);
+    filterTable();
+
+    // Stats
+    const total     = encounters.length;
+    const inscritos = encounters.filter(e => e.inscrito).length;
+    const proximos  = encounters.filter(e => e.estado === 'proximo').length;
+    const elTotal     = document.getElementById('statTotal');
+    const elInscritos = document.getElementById('statInscritos');
+    const elProximos  = document.getElementById('statProximos');
+    const elBalance   = document.getElementById('statBalance');
+    if (elTotal)     elTotal.textContent     = total;
+    if (elInscritos) elInscritos.textContent = inscritos;
+    if (elProximos)  elProximos.textContent  = proximos;
+    if (elBalance)   elBalance.textContent   = fmtNum(perfil.balanceDunab) + ' D';
+    Auth.setUser({ ...Auth.getUser(), balanceDunab: perfil.balanceDunab, nombre: perfil.nombre });
+
+  } catch (err) {
+    console.error('Error cargando encuentros:', err);
+    document.getElementById('tableBody').innerHTML =
+      '<tr><td colspan="9" style="text-align:center;padding:32px;color:#EF4444">⚠️ No se pudo cargar. Verifica que el backend esté activo.</td></tr>';
+  }
+});
+
+
+// ── Dropdown de usuario ──────────────────────────────────────────────────────
+(function initDropdown() {
+  const btn  = document.getElementById('userChipBtn');
+  const drop = document.getElementById('userDropdown');
+  if (!btn || !drop) return;
+  btn.addEventListener('click', e => { e.stopPropagation(); drop.classList.toggle('open'); });
+  document.addEventListener('click', () => drop.classList.remove('open'));
+  const logoutBtn = document.getElementById('dropLogout');
+  if (logoutBtn) logoutBtn.addEventListener('click', () => Auth.logout());
+
+  const user = Auth.getUser();
+  if (user) {
+    const av = document.getElementById('topAvatar');
+    const nm = document.getElementById('topUserName');
+    const dn = document.getElementById('dropName');
+    const dr = document.getElementById('dropRole');
+    const initials = (user.nombre||'U').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    if (av) av.textContent = initials;
+    if (nm) nm.textContent = user.nombre ? user.nombre.split(' ')[0] + (user.nombre.split(' ')[1] ? ' ' + user.nombre.split(' ')[1][0] + '.' : '') : 'Usuario';
+    if (dn) dn.textContent = user.nombre || '—';
+    if (dr) dr.textContent = user.rol === 'ADMIN' ? 'Administrador' : 'Estudiante';
+  }
+})();
+
+// Mostrar enlaces de gestión según el rol del usuario
+(function showAdminLinks() {
+  const user = Auth.getUser();
+  if (!user) return;
+  if (user.rol === 'ADMIN' || user.rol === 'SUPERADMIN') {
+    const elEst = document.getElementById('navGestionarEstudiantes');
+    if (elEst) elEst.classList.add('visible');
+  }
+  if (user.rol === 'SUPERADMIN') {
+    const el = document.getElementById('navGestionarAdmins');
+    if (el) el.classList.add('visible');
+  }
+})();
+
+</script>
+</body>
+</html>                                                                                                                                                                                                                                                                                                                                                   

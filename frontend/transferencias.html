@@ -1,0 +1,870 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Transferencias P2P – DUNAB</title>
+  
+  <script>
+    (function(){
+      try {
+        var u = JSON.parse(localStorage.getItem('dunab_user')||'null');
+        var t = (u && u.temaPreferencia) || localStorage.getItem('dunab_theme') || 'CLARO';
+        if (t === 'OSCURO') document.documentElement.setAttribute('data-theme','dark');
+      } catch(e){}
+    })();
+  </script>
+  <link rel="stylesheet" href="css/dunab-theme.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+            
+</style>
+</head>
+<body>
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo" data-auto-logo></div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+    <a class="nav-item" href="encuentros.html"><span class="nav-icon">📅</span><span>Encuentros</span></a>
+    <a class="nav-item" href="ranking.html"><span class="nav-icon">🏆</span><span>Ranking</span></a>
+    <a class="nav-item" href="historial.html"><span class="nav-icon">⏱</span><span>Historial</span></a>
+    <a class="nav-item active" href="transferencias.html"><span class="nav-icon">⇄</span><span>Transferencias</span></a>
+    <a class="nav-item" href="feed.html"><span class="nav-icon">📣</span><span>Feed</span></a>
+    <a class="nav-item" href="tienda.html"><span class="nav-icon">🛍️</span><span>Tienda</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEstudiantes" href="gestionar-estudiantes.html"><span class="nav-icon">🎓</span><span>Gestionar Estudiantes</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEncuentros" href="gestionar-encuentros.html"><span class="nav-icon">⚙</span><span>Gestionar Encuentros</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarRecompensas" href="gestionar-recompensas.html"><span class="nav-icon">🎁</span><span>Gestionar Tienda</span></a>
+    <a class="nav-item nav-item-super" id="navGestionarAdmins" href="gestionar-admins.html"><span class="nav-icon">🛡</span><span>Gestionar Admins</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <a class="nav-item" href="perfil.html"><span class="nav-icon">👤</span><span>Perfil</span></a>
+  </div>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<div class="main">
+  <header class="topnav">
+  <div class="search-wrap">
+    <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" placeholder="Buscar encuentros, estudiantes…" id="topSearch"/>
+  </div>
+  <div class="topnav-right">
+    <div class="user-chip-wrap">
+      <div class="user-chip" id="userChipBtn">
+        <div class="user-meta">
+          <span class="user-meta-label" data-user-faculty>Facultad de Ciencias Jurídicas y Políticas</span>
+          <span class="user-meta-name" id="topUserName" data-user-name>Usuario</span>
+        </div>
+        <div class="user-avatar" id="topAvatar" data-user-avatar>U</div>
+      </div>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="dropdown-header">
+          <div class="d-name" id="dropName" data-user-name>Usuario</div>
+          <div class="d-role" id="dropRole" data-user-role>Estudiante</div>
+        </div>
+        <a class="dropdown-item" href="perfil.html">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Mi Perfil
+        </a>
+        <a class="dropdown-item" href="historial.html">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z"/><path d="M12 8v4l3 3"/></svg>
+          Historial
+        </a>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item danger" id="dropLogout" data-logout>
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Cerrar sesión
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+  <main class="content">
+    <h1 class="page-title">Transferencias P2P</h1>
+
+    <!-- Stats -->
+    <div class="stats-strip">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FDE8ED">💰</div>
+        <div>
+          <div class="stat-val" id="statBalance">— D</div>
+          <div class="stat-lbl">Saldo disponible</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FEE2E2">📤</div>
+        <div>
+          <div class="stat-val" id="statEnviado">— D</div>
+          <div class="stat-lbl">Enviado este mes</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#D1FAE5">📥</div>
+        <div>
+          <div class="stat-val" id="statRecibido">— D</div>
+          <div class="stat-lbl">Recibido este mes</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#DBEAFE">🔁</div>
+        <div>
+          <div class="stat-val" id="statTotal">—</div>
+          <div class="stat-lbl">Transferencias totales</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Main grid -->
+    <div class="main-grid">
+
+      <!-- LEFT: Send panel -->
+      <div>
+        <div class="send-panel">
+          <div class="send-header">
+            <div class="send-header-title">💸 Enviar DUNAB</div>
+            <div class="send-header-sub">Transferencia instantánea entre estudiantes</div>
+            <div class="balance-chip" id="balanceChip">💰 — D <small>disponibles</small></div>
+          </div>
+          <div class="send-body">
+
+            <!-- Recipient -->
+            <label class="field-label">Destinatario</label>
+            <div class="recipient-wrap" id="recipientWrap">
+              <span class="recipient-icon">👤</span>
+              <input class="recipient-input" type="text" id="recipientSearch"
+                placeholder="Buscar por nombre o código…"
+                autocomplete="off"
+                oninput="searchRecipients(this.value)"
+                onfocus="searchRecipients(this.value)"/>
+              <div class="dropdown" id="recipientDropdown"></div>
+            </div>
+            <div class="recipient-card" id="recipientCard" onclick="clearRecipient()">
+              <div class="rc-avatar" id="rcAvatar"></div>
+              <div>
+                <div class="rc-name" id="rcName"></div>
+                <div class="rc-sub"  id="rcSub"></div>
+              </div>
+              <div class="rc-change">✕ Cambiar</div>
+            </div>
+
+            <!-- Amount -->
+            <label class="field-label">Cantidad a enviar</label>
+            <div class="amount-wrap">
+              <div class="amount-input-row">
+                <span class="amount-prefix">💰</span>
+                <input class="amount-input" type="number" id="amountInput"
+                  min="1" max="4320" placeholder="0"
+                  oninput="onAmountChange()"/>
+                <span class="amount-suffix">DUNAB</span>
+              </div>
+              <div class="amount-error" id="amountError"></div>
+              <div class="quick-amounts">
+                <button class="quick-btn" onclick="setAmount(50)">50</button>
+                <button class="quick-btn" onclick="setAmount(100)">100</button>
+                <button class="quick-btn" onclick="setAmount(200)">200</button>
+                <button class="quick-btn" onclick="setAmount(500)">500</button>
+              </div>
+            </div>
+
+            <!-- Nota -->
+            <label class="field-label">Nota (opcional)</label>
+            <div class="note-wrap">
+              <textarea class="note-input" id="noteInput"
+                placeholder="Ej. Para el trabajo en grupo de Constitucional…"></textarea>
+            </div>
+
+            <!-- Summary -->
+            <div class="summary-box" id="summaryBox">
+              <div class="summary-row">
+                <span>Destinatario</span>
+                <span id="sumName">—</span>
+              </div>
+              <div class="summary-row">
+                <span>Monto</span>
+                <span id="sumAmount">0 DUNAB</span>
+              </div>
+              <div class="summary-row">
+                <span>Saldo actual</span>
+                <span id="sumActual">— DUNAB</span>
+              </div>
+              <div class="summary-row total">
+                <span>Saldo resultante</span>
+                <span id="sumResult">— DUNAB</span>
+              </div>
+            </div>
+
+            <button class="btn-send" id="btnSend" disabled onclick="openConfirm()">
+              <svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>
+              </svg>
+              Enviar DUNAB
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: History + Contacts -->
+      <div class="history-panel">
+
+        <!-- Contacts frecuentes -->
+        <div class="contacts-card">
+          <div class="contacts-header">⚡ Contactos frecuentes</div>
+          <div class="contacts-grid" id="contactsGrid"></div>
+        </div>
+
+        <!-- Historial -->
+        <div class="history-card">
+          <div class="history-card-header">
+            <span class="history-card-title">Historial de transferencias</span>
+            <div class="hist-tabs">
+              <button class="hist-tab active" onclick="setTab(this,'todas')">Todas</button>
+              <button class="hist-tab" onclick="setTab(this,'enviadas')">Enviadas</button>
+              <button class="hist-tab" onclick="setTab(this,'recibidas')">Recibidas</button>
+            </div>
+          </div>
+          <div class="tx-list" id="txList"></div>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<!-- ════════════ MODAL ════════════ -->
+<div class="modal-overlay" id="modalOverlay">
+  <div class="modal">
+    <!-- Step 1: Confirm + PIN -->
+    <div class="modal-confirm" id="stepConfirm">
+      <div class="modal-confirm-icon">💸</div>
+      <div class="modal-confirm-title">Confirmar transferencia</div>
+      <div class="modal-confirm-sub">Revisa los datos antes de enviar</div>
+      <div class="confirm-detail">
+        <div class="confirm-row">
+          <span>Para</span>
+          <span id="cName">—</span>
+        </div>
+        <div class="confirm-row">
+          <span>Código</span>
+          <span id="cCode">—</span>
+        </div>
+        <div class="confirm-row">
+          <span>Nota</span>
+          <span id="cNote">Sin nota</span>
+        </div>
+        <div class="confirm-row highlight">
+          <span>Monto</span>
+          <span id="cAmount">0 D</span>
+        </div>
+      </div>
+      <div class="pin-section">
+        <div class="pin-label">Ingresa tu PIN de seguridad (4 dígitos)</div>
+        <div class="pin-inputs">
+          <input class="pin-input" type="password" maxlength="1" inputmode="numeric" id="p1" oninput="nextPin(this,'p2')"/>
+          <input class="pin-input" type="password" maxlength="1" inputmode="numeric" id="p2" oninput="nextPin(this,'p3')"/>
+          <input class="pin-input" type="password" maxlength="1" inputmode="numeric" id="p3" oninput="nextPin(this,'p4')"/>
+          <input class="pin-input" type="password" maxlength="1" inputmode="numeric" id="p4" oninput="nextPin(this,null)"/>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+        <button class="btn-modal-ok" id="btnConfirmOk" onclick="executeTransfer()">Confirmar envío</button>
+      </div>
+    </div>
+    <!-- Step 2: Success -->
+    <div class="modal-success" id="stepSuccess">
+      <div class="success-anim">✅</div>
+      <div class="success-title">¡Transferencia exitosa!</div>
+      <div class="success-sub" id="successMsg">Enviaste 0 DUNAB a —</div>
+      <button class="btn-success-close" onclick="closeModal()">Perfecto, cerrar</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script>
+// ─── DATA ──────────────────────────────────────────────────────────────────
+let myBalance = 0;
+
+const COLORS = [
+  '#8C1D40','#1E40AF','#065F46','#92400E','#6B21A8',
+  '#155E75','#9D174D','#166534','#1E3A5F','#7C2D12'
+];
+
+// Datos cargados desde la API
+let transactions = [];
+let _rankingContacts = [];
+
+let selectedRecipient = null;
+let currentTab = 'todas';
+
+// ─── INIT — delegada a DOMContentLoaded tras cargar api.js ───────────────
+function init() { /* datos cargados desde API */ }
+
+// ─── CONTACTS ──────────────────────────────────────────────────────────────
+function renderContacts(users) {
+  const grid = document.getElementById('contactsGrid');
+  if (!grid) return;
+  grid.innerHTML = '';
+  if (!users || !users.length) {
+    grid.innerHTML = '<div style="text-align:center;padding:16px;color:#9CA3AF;font-size:13px">Sin contactos frecuentes aún.</div>';
+    return;
+  }
+  users.forEach((s, i) => {
+    const nombre  = s.nombre || s.name || 'Usuario';
+    const initials = nombre.split(' ').slice(0,2).map(w=>w[0]).join('');
+    const color   = COLORS[i % COLORS.length];
+    const dunab   = s.balanceDunab !== undefined ? s.balanceDunab : (s.dunab || 0);
+    const div = document.createElement('div');
+    div.className = 'contact-item';
+    div.innerHTML = `
+      <div class="contact-av" style="background:${color}">${initials}</div>
+      <div class="contact-name">${nombre.split(' ')[0]}</div>
+      <div class="contact-score">${dunab.toLocaleString('es-CO')} D</div>`;
+    div.onclick = () => selectRecipient({ id: s.usuarioId || s.id, name: nombre, code: s.codigo || s.code || '', dunab, color });
+    grid.appendChild(div);
+  });
+}
+
+// ─── RECIPIENT SEARCH — usa API real ──────────────────────────────────────
+let _searchTimer2;
+function searchRecipients(q) {
+  const dd  = document.getElementById('recipientDropdown');
+  const val = q.trim();
+  if (val.length < 2) { dd.classList.remove('open'); dd.innerHTML = ''; return; }
+
+  clearTimeout(_searchTimer2);
+  _searchTimer2 = setTimeout(async () => {
+    try {
+      const results = await TransferenciaAPI.buscarDestinatario(val);
+      dd.innerHTML = '';
+      if (!results || !results.length) { dd.classList.remove('open'); return; }
+      results.slice(0, 6).forEach((s, i) => {
+        const nombre   = s.nombre || s.name || 'Usuario';
+        const initials = nombre.split(' ').slice(0,2).map(w=>w[0]).join('');
+        const color    = COLORS[i % COLORS.length];
+        const dunab    = s.balanceDunab !== undefined ? s.balanceDunab : 0;
+        const item = document.createElement('div');
+        item.className = 'drop-item';
+        item.innerHTML = `
+          <div class="drop-avatar" style="background:${color}">${initials}</div>
+          <div>
+            <div class="drop-name">${nombre}</div>
+            <div class="drop-code">Cód. ${s.codigo || s.code || ''}</div>
+          </div>
+          <div class="drop-score">${dunab.toLocaleString('es-CO')} D</div>`;
+        item.onclick = () => selectRecipient({ id: s.id, name: nombre, code: s.codigo || s.code || '', dunab, color });
+        dd.appendChild(item);
+      });
+      dd.classList.add('open');
+    } catch (e) { dd.classList.remove('open'); }
+  }, 300);
+}
+
+function selectRecipient(s) {
+  selectedRecipient = s;
+  const initials = s.name.split(' ').slice(0,2).map(w=>w[0]).join('');
+  document.getElementById('rcAvatar').textContent = initials;
+  document.getElementById('rcAvatar').style.background = s.color;
+  document.getElementById('rcName').textContent = s.name;
+  document.getElementById('rcSub').textContent = `Cód. ${s.code} · ${s.dunab.toLocaleString('es-CO')} DUNAB`;
+  document.getElementById('recipientSearch').value = '';
+  document.getElementById('recipientDropdown').classList.remove('open');
+  document.getElementById('recipientWrap').style.display = 'none';
+  document.getElementById('recipientCard').classList.add('show');
+  updateSummary();
+  validateForm();
+}
+
+function clearRecipient() {
+  selectedRecipient = null;
+  document.getElementById('recipientWrap').style.display = '';
+  document.getElementById('recipientCard').classList.remove('show');
+  document.getElementById('recipientSearch').value = '';
+  updateSummary();
+  validateForm();
+}
+
+// ─── AMOUNT ────────────────────────────────────────────────────────────────
+function setAmount(v) {
+  document.getElementById('amountInput').value = v;
+  onAmountChange();
+}
+
+function onAmountChange() {
+  const err = document.getElementById('amountError');
+  const val = parseInt(document.getElementById('amountInput').value) || 0;
+  err.classList.remove('show');
+
+  if (val <= 0) {
+    err.textContent = 'El monto debe ser mayor a 0.';
+    err.classList.add('show');
+  } else if (val > myBalance) {
+    err.textContent = `Saldo insuficiente. Tienes ${myBalance.toLocaleString('es-CO')} DUNAB disponibles.`;
+    err.classList.add('show');
+  } else if (val > 2000) {
+    err.textContent = 'El límite por transferencia es de 2.000 DUNAB.';
+    err.classList.add('show');
+  }
+
+  updateSummary();
+  validateForm();
+}
+
+function updateSummary() {
+  const val = parseInt(document.getElementById('amountInput').value) || 0;
+  const box = document.getElementById('summaryBox');
+
+  if (selectedRecipient && val > 0 && val <= myBalance && val <= 2000) {
+    document.getElementById('sumName').textContent   = selectedRecipient.name;
+    document.getElementById('sumAmount').textContent = val.toLocaleString('es-CO') + ' DUNAB';
+    document.getElementById('sumResult').textContent = (myBalance - val).toLocaleString('es-CO') + ' DUNAB';
+    const sa = document.getElementById('sumActual');
+    if (sa) sa.textContent = myBalance.toLocaleString('es-CO') + ' DUNAB';
+    box.classList.add('show');
+  } else {
+    box.classList.remove('show');
+  }
+}
+
+function validateForm() {
+  const val = parseInt(document.getElementById('amountInput').value) || 0;
+  const ok  = selectedRecipient && val > 0 && val <= myBalance && val <= 2000;
+  document.getElementById('btnSend').disabled = !ok;
+}
+
+// ─── CONFIRM MODAL ─────────────────────────────────────────────────────────
+async function openConfirm() {
+  // 1. Verificar que el usuario tenga PIN de seguridad configurado.
+  //    Sin PIN no se puede confirmar ninguna transferencia, así que
+  //    bloqueamos el flujo aquí mismo en lugar de dejar que el usuario
+  //    llene el modal y reciba el error después.
+  const btnSend = document.getElementById('btnSend');
+  const txtOrig = btnSend ? btnSend.textContent : null;
+  if (btnSend) { btnSend.disabled = true; btnSend.textContent = 'Verificando PIN...'; }
+
+  let tienePin = false;
+  try {
+    const estado = await UsuarioAPI.estadoPin();
+    tienePin = !!(estado && estado.tienePinConfigurado);
+  } catch (err) {
+    // Si la API falla, asumimos que no hay PIN (mejor pecar de prudente).
+    tienePin = false;
+  } finally {
+    if (btnSend) { btnSend.disabled = false; if (txtOrig) btnSend.textContent = txtOrig; }
+  }
+
+  if (!tienePin) {
+    mostrarAlertaPinFaltante();
+    return;
+  }
+
+  // 2. PIN configurado — abrir el modal normalmente.
+  const val  = parseInt(document.getElementById('amountInput').value) || 0;
+  const note = document.getElementById('noteInput').value.trim();
+  document.getElementById('cName').textContent   = selectedRecipient.name;
+  document.getElementById('cCode').textContent   = 'Cód. ' + selectedRecipient.code;
+  document.getElementById('cNote').textContent   = note || 'Sin nota';
+  document.getElementById('cAmount').textContent = val.toLocaleString('es-CO') + ' DUNAB';
+  ['p1','p2','p3','p4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.value = ''; el.style.borderColor = ''; el.style.background = ''; }
+  });
+  const pinWarn = document.getElementById('pinWarnMsg');
+  if (pinWarn) pinWarn.remove();
+  document.getElementById('stepConfirm').style.display = 'block';
+  document.getElementById('stepSuccess').style.display = 'none';
+  document.getElementById('modalOverlay').classList.add('open');
+  setTimeout(() => document.getElementById('p1').focus(), 100);
+}
+
+// ─── ALERTA: PIN NO CONFIGURADO ────────────────────────────────────────────
+function mostrarAlertaPinFaltante() {
+  // Si ya está abierta, no duplicar.
+  if (document.getElementById('alertaPinOverlay')) return;
+
+  const overlay = document.createElement('div');
+  overlay.id = 'alertaPinOverlay';
+  overlay.style.cssText = `
+    position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9998;
+    display:flex;align-items:center;justify-content:center;padding:20px;
+    animation:fadeInPin .15s ease;
+  `;
+
+  overlay.innerHTML = `
+    <style>
+      @keyframes fadeInPin { from {opacity:0} to {opacity:1} }
+      @keyframes popPin { from {transform:scale(.92);opacity:0} to {transform:scale(1);opacity:1} }
+      #alertaPinBox button:hover { filter:brightness(.95); }
+    </style>
+    <div id="alertaPinBox" style="
+      background:#fff;border-radius:16px;max-width:420px;width:100%;
+      padding:28px 28px 22px;box-shadow:0 20px 60px rgba(0,0,0,.25);
+      animation:popPin .2s ease;text-align:center;
+    ">
+      <div style="
+        width:64px;height:64px;border-radius:50%;
+        background:#FEF3C7;display:flex;align-items:center;justify-content:center;
+        margin:0 auto 16px;font-size:32px;
+      ">🔐</div>
+      <h3 style="font-size:18px;font-weight:700;color:#1A1A2E;margin-bottom:8px">
+        PIN de seguridad requerido
+      </h3>
+      <p style="font-size:13.5px;color:#6B7280;line-height:1.55;margin-bottom:22px">
+        Para enviar DUNAB a otro estudiante necesitas configurar tu
+        <strong>PIN de 4 dígitos</strong> en tu perfil.<br>
+        Esto protege tu cuenta de transferencias no autorizadas.
+      </p>
+      <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap">
+        <button id="alertaPinCancel" style="
+          padding:10px 20px;border-radius:10px;border:1px solid #E5E7EB;
+          background:#fff;color:#374151;font-weight:600;font-size:13.5px;
+          cursor:pointer;font-family:inherit;
+        ">Cancelar</button>
+        <button id="alertaPinIr" style="
+          padding:10px 22px;border-radius:10px;border:none;
+          background:#8C1D40;color:#fff;font-weight:600;font-size:13.5px;
+          cursor:pointer;font-family:inherit;display:inline-flex;align-items:center;gap:6px;
+        ">🔑 Configurar PIN ahora</button>
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+
+  const cerrar = () => overlay.remove();
+  document.getElementById('alertaPinCancel').addEventListener('click', cerrar);
+  document.getElementById('alertaPinIr').addEventListener('click', () => {
+    window.location.href = 'perfil.html#pin';
+  });
+  // Cerrar al hacer click fuera del cuadro
+  overlay.addEventListener('click', e => { if (e.target === overlay) cerrar(); });
+  // Cerrar con Escape
+  document.addEventListener('keydown', function esc(e){
+    if (e.key === 'Escape') { cerrar(); document.removeEventListener('keydown', esc); }
+  });
+}
+
+function closeModal() {
+  document.getElementById('modalOverlay').classList.remove('open');
+}
+
+function nextPin(el, nextId) {
+  // Solo acepta dígitos
+  el.value = el.value.replace(/\D/g, '').slice(-1);
+  clearPinError();
+  checkPin();
+  if (el.value.length === 1 && nextId) document.getElementById(nextId)?.focus();
+}
+
+function checkPin() {
+  // Resalta los inputs llenos
+  ['p1','p2','p3','p4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.style.borderColor = el.value ? 'var(--unab-red)' : '';
+  });
+}
+
+// Limpia error visual del PIN
+function clearPinError() {
+  ['p1','p2','p3','p4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.borderColor = ''; el.style.background = ''; }
+  });
+  const warn = document.getElementById('pinWarnMsg');
+  if (warn) warn.remove();
+}
+
+// Muestra el error de PIN debajo de los inputs
+function showPinError(msg) {
+  ['p1','p2','p3','p4'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) { el.style.borderColor = 'var(--red-neg)'; el.style.background = '#FFF5F5'; }
+  });
+  let warn = document.getElementById('pinWarnMsg');
+  if (!warn) {
+    warn = document.createElement('div');
+    warn.id = 'pinWarnMsg';
+    warn.style.cssText = 'font-size:12px;color:var(--red-neg);text-align:center;margin-top:-12px;margin-bottom:8px';
+    const pinSection = document.querySelector('.pin-section');
+    if (pinSection) pinSection.appendChild(warn);
+  }
+  warn.textContent = msg;
+}
+
+async function executeTransfer() {
+  const pins = ['p1','p2','p3','p4'].map(id => document.getElementById(id).value);
+  if (pins.some(p => !p || !/^[0-9]$/.test(p))) {
+    showToast('Ingresa los 4 dígitos del PIN.', 'error');
+    return;
+  }
+
+  const pin  = pins.join('');
+  const val  = parseInt(document.getElementById('amountInput').value);
+  const note = document.getElementById('noteInput').value.trim();
+
+  const btn = document.getElementById('btnConfirmOk');
+  if (btn) { btn.disabled = true; btn.textContent = 'Verificando...'; }
+  clearPinError();
+
+  try {
+    // 1. Validar PIN antes de ejecutar la transferencia
+    try {
+      const pinRes = await UsuarioAPI.validarPin(pin);
+      if (!pinRes.valido) {
+        showPinError('❌ PIN incorrecto. Inténtalo de nuevo.');
+        ['p1','p2','p3','p4'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+        document.getElementById('p1')?.focus();
+        return;
+      }
+    } catch (pinErr) {
+      // Si el error es 401 del endpoint de validación, es PIN incorrecto
+      if (pinErr.status === 401) {
+        showPinError('❌ PIN incorrecto. Inténtalo de nuevo.');
+        ['p1','p2','p3','p4'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
+        document.getElementById('p1')?.focus();
+        return;
+      }
+      // Si no tiene PIN configurado, informar y redirigir
+      showToast('No tienes un PIN configurado. Configúralo en tu perfil antes de transferir.', 'warning');
+      setTimeout(() => window.location.href = 'perfil.html', 2000);
+      return;
+    }
+
+    // 2. PIN válido — ejecutar transferencia
+    if (btn) btn.textContent = 'Enviando...';
+    const result = await TransferenciaAPI.enviar(selectedRecipient.id, val, note);
+
+    // Actualizar balance dinámicamente
+    myBalance = result.balanceRemitente;
+    document.getElementById('statBalance').textContent = myBalance.toLocaleString('es-CO') + ' D';
+    Auth.setUser({ ...Auth.getUser(), balanceDunab: myBalance });
+    const chip = document.getElementById('balanceChip');
+    if (chip) chip.innerHTML = `💰 ${myBalance.toLocaleString('es-CO')} D <small>disponibles</small>`;
+    const sumAct = document.getElementById('sumActual');
+    if (sumAct) sumAct.textContent = myBalance.toLocaleString('es-CO') + ' DUNAB';
+    const sumRes = document.getElementById('sumResult');
+    if (sumRes) sumRes.textContent = myBalance.toLocaleString('es-CO') + ' DUNAB';
+
+    // Recargar historial
+    const historial = await TransferenciaAPI.historialCompleto();
+    _normalizarYRenderizar(historial);
+
+    // Mostrar paso de éxito
+    document.getElementById('successMsg').textContent =
+      `Enviaste ${val.toLocaleString('es-CO')} DUNAB a ${selectedRecipient.name}`;
+    document.getElementById('stepConfirm').style.display = 'none';
+    document.getElementById('stepSuccess').style.display = 'block';
+
+    // Limpiar formulario
+    clearRecipient();
+    document.getElementById('amountInput').value = '';
+    document.getElementById('noteInput').value   = '';
+    document.getElementById('summaryBox').classList.remove('show');
+    document.getElementById('btnSend').disabled = true;
+
+  } catch (err) {
+    showToast(err.message || 'Error al procesar la transferencia.', 'error');
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = 'Confirmar envío'; }
+  }
+}
+
+// Normaliza historial de la API al formato interno y renderiza
+function _normalizarYRenderizar(historial) {
+  transactions = (historial || []).map((t, idx) => ({
+    id: t.id || idx,
+    type: t.direccion === 'ENVIADA' ? 'sent' : 'received',
+    student: {
+      name: t.direccion === 'ENVIADA' ? (t.destinatario || 'Desconocido') : (t.remitente || 'Desconocido'),
+      code: t.codigoDestinatario || t.codigoRemitente || '',
+      color: COLORS[idx % COLORS.length]
+    },
+    amount: t.monto,
+    note: t.nota || '',
+    date: t.fecha ? t.fecha.slice(0, 10) : '',
+    status: 'ok'
+  }));
+  renderTx(transactions);
+
+  // Actualizar stats
+  const env = transactions.filter(t => t.type === 'sent');
+  const rec = transactions.filter(t => t.type === 'received');
+  const sumEnv = env.reduce((s, t) => s + t.amount, 0);
+  const sumRec = rec.reduce((s, t) => s + t.amount, 0);
+  const elEnv = document.getElementById('statEnviado');
+  const elRec = document.getElementById('statRecibido');
+  const elTot = document.getElementById('statTotal');
+  if (elEnv) elEnv.textContent = sumEnv.toLocaleString('es-CO') + ' D';
+  if (elRec) elRec.textContent = '+' + sumRec.toLocaleString('es-CO') + ' D';
+  if (elTot) elTot.textContent = transactions.length;
+}
+
+// ─── HISTORIAL ─────────────────────────────────────────────────────────────
+function setTab(el, tab) {
+  currentTab = tab;
+  document.querySelectorAll('.hist-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const filtered = tab === 'todas' ? transactions
+    : transactions.filter(t => t.type === tab.slice(0,-1)); // 'enviadas'→'enviado', etc.
+  renderTx(filtered);
+}
+
+function renderTx(list) {
+  const container = document.getElementById('txList');
+  container.innerHTML = '';
+
+  let filtered = list;
+  if (currentTab === 'enviadas')  filtered = list.filter(t => t.type === 'sent');
+  if (currentTab === 'recibidas') filtered = list.filter(t => t.type === 'received');
+
+  if (!filtered.length) {
+    container.innerHTML = `<div style="text-align:center;padding:32px;color:var(--text-light);font-size:14px">Sin transferencias en este período.</div>`;
+    return;
+  }
+
+  filtered.forEach(tx => {
+    const s        = tx.student;
+    const initials = s.name.split(' ').slice(0,2).map(w=>w[0]).join('');
+    const isSent   = tx.type === 'sent';
+    const amtSign  = isSent ? '−' : '+';
+    const amtClass = isSent ? 'sent' : 'received';
+    const dirIcon  = isSent ? '📤' : '📥';
+    const dirBg    = isSent ? '#FEE2E2' : '#D1FAE5';
+    const dateObj  = new Date(tx.date + 'T00:00:00');
+    const dateStr  = dateObj.toLocaleDateString('es-CO',{day:'2-digit',month:'short',year:'numeric'});
+
+    const statusMap = {
+      ok:   `<span class="tx-status status-ok"><span class="status-dot" style="background:#10B981"></span>Completada</span>`,
+      pend: `<span class="tx-status status-pend"><span class="status-dot" style="background:#F59E0B"></span>Pendiente</span>`,
+      fail: `<span class="tx-status status-fail"><span class="status-dot" style="background:#EF4444"></span>Fallida</span>`,
+    };
+
+    const row = document.createElement('div');
+    row.className = 'tx-row';
+    row.innerHTML = `
+      <div class="tx-avatar-wrap">
+        <div class="tx-avatar" style="background:${s.color}">${initials}</div>
+        <div class="tx-dir-icon" style="background:${dirBg};font-size:11px">${dirIcon}</div>
+      </div>
+      <div class="tx-info">
+        <div class="tx-name">${isSent ? 'Enviado a' : 'Recibido de'} ${s.name}</div>
+        <div class="tx-meta">Cód. ${s.code} · #TXN-${String(tx.id).padStart(5,'0')}</div>
+        ${tx.note ? `<div class="tx-note">"${tx.note}"</div>` : ''}
+        ${statusMap[tx.status] || ''}
+      </div>
+      <div class="tx-right">
+        <div class="tx-amount ${amtClass}">${amtSign}${tx.amount.toLocaleString('es-CO')} D</div>
+        <div class="tx-date">${dateStr}</div>
+      </div>`;
+    container.appendChild(row);
+  });
+}
+
+// ─── CLOSE DROPDOWN ON OUTSIDE CLICK ──────────────────────────────────────
+document.addEventListener('click', e => {
+  if (!document.getElementById('recipientWrap').contains(e.target)) {
+    document.getElementById('recipientDropdown').classList.remove('open');
+  }
+});
+
+document.getElementById('modalOverlay').addEventListener('click', e => {
+  if (e.target === document.getElementById('modalOverlay')) closeModal();
+});
+
+// ─── TOAST ─────────────────────────────────────────────────────────────────
+function showToast(type, icon, msg) {
+  const c = document.getElementById('toastContainer');
+  const t = document.createElement('div');
+  t.className = 'toast' + (type ? ' '+type : '');
+  t.innerHTML = `<span>${icon}</span><span>${msg}</span>`;
+  c.appendChild(t);
+  setTimeout(() => t.remove(), 3800);
+}
+
+// ─── INIT ──────────────────────────────────────────────────────────────────
+init();
+</script>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/theme.js"></script>
+<script>
+// ── Integración API DUNAB — Transferencias ────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  try {
+    const [perfil, historial, ranking] = await Promise.all([
+      UsuarioAPI.getMiPerfil(),
+      TransferenciaAPI.historialCompleto(),
+      RankingAPI.getRanking().catch(() => [])
+    ]);
+
+    // Balance
+    myBalance = perfil.balanceDunab || 0;
+    const balFmt = myBalance.toLocaleString('es-CO');
+    document.getElementById('statBalance').textContent  = balFmt + ' D';
+    const chip = document.getElementById('balanceChip');
+    if (chip) chip.innerHTML = `💰 ${balFmt} D <small>disponibles</small>`;
+    const sumAct = document.getElementById('sumActual');
+    if (sumAct) sumAct.textContent = balFmt + ' DUNAB';
+    const sumRes = document.getElementById('sumResult');
+    if (sumRes) sumRes.textContent = balFmt + ' DUNAB';
+
+    // Normalizar y renderizar historial
+    _normalizarYRenderizar(historial);
+
+    // Contactos frecuentes — top 4 del ranking excluyendo el usuario actual
+    const yo = perfil.id || (Auth.getUser() && Auth.getUser().id);
+    _rankingContacts = (ranking || []).filter(u => (u.usuarioId || u.id) !== yo).slice(0, 4);
+    renderContacts(_rankingContacts);
+
+  } catch (err) {
+    console.error('Error cargando transferencias:', err);
+    showToast('error', '⚠️', 'Error al cargar datos. Verifica que el backend esté activo.');
+  }
+});
+
+// ── Dropdown de usuario ──────────────────────────────────────────────────────
+(function initDropdown() {
+  const btn  = document.getElementById('userChipBtn');
+  const drop = document.getElementById('userDropdown');
+  if (!btn || !drop) return;
+  btn.addEventListener('click', e => { e.stopPropagation(); drop.classList.toggle('open'); });
+  document.addEventListener('click', () => drop.classList.remove('open'));
+  const logoutBtn = document.getElementById('dropLogout');
+  if (logoutBtn) logoutBtn.addEventListener('click', () => Auth.logout());
+
+  // Poblar datos del dropdown desde Auth
+  const user = Auth.getUser();
+  if (user) {
+    const av = document.getElementById('topAvatar');
+    const nm = document.getElementById('topUserName');
+    const dn = document.getElementById('dropName');
+    const dr = document.getElementById('dropRole');
+    const initials = (user.nombre||'U').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    if (av) av.textContent = initials;
+    if (nm) nm.textContent = user.nombre ? user.nombre.split(' ')[0] + (user.nombre.split(' ')[1] ? ' ' + user.nombre.split(' ')[1][0] + '.' : '') : 'Usuario';
+    if (dn) dn.textContent = user.nombre || '—';
+    if (dr) dr.textContent = user.rol === 'ADMIN' ? 'Administrador' : 'Estudiante';
+  }
+})();
+
+// Mostrar enlace superadmin solo si el usuario tiene ese rol
+(function showAdminLinks() {
+  const user = Auth.getUser();
+  if (!user) return;
+  if (user.rol === 'ADMIN' || user.rol === 'SUPERADMIN') {
+    const elEst = document.getElementById('navGestionarEstudiantes');
+    if (elEst) elEst.classList.add('visible');
+  }
+  if (user.rol === 'SUPERADMIN') {
+    const el = document.getElementById('navGestionarAdmins');
+    if (el) el.classList.add('visible');
+  }
+})();
+
+</script>
+</body>
+</html>

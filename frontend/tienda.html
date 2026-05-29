@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Tienda – DUNAB</title>
+  <script>
+    (function(){
+      try {
+        var u = JSON.parse(localStorage.getItem('dunab_user')||'null');
+        var t = (u && u.temaPreferencia) || localStorage.getItem('dunab_theme') || 'CLARO';
+        if (t === 'OSCURO') document.documentElement.setAttribute('data-theme','dark');
+      } catch(e){}
+    })();
+  </script>
+  <link rel="stylesheet" href="css/dunab-theme.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Banner de balance ──────────────────────────────────── */
+    .balance-banner {
+      background: linear-gradient(135deg, var(--unab-red) 0%, var(--unab-red-dark) 100%);
+      border-radius: var(--radius-card);
+      padding: 24px 28px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 20px;
+      margin-bottom: 24px;
+      flex-wrap: wrap;
+    }
+    .balance-banner-left { display: flex; flex-direction: column; gap: 4px; }
+    .balance-banner-label { font-size: 13px; font-weight: 500; opacity: .85; }
+    .balance-banner-amount { font-size: 36px; font-weight: 800; letter-spacing: -1px; }
+    .balance-banner-sub { font-size: 12px; opacity: .7; }
+    .btn-mis-canjes {
+      background: rgba(255,255,255,.18);
+      border: 1px solid rgba(255,255,255,.35);
+      color: #fff;
+      border-radius: var(--radius-sm);
+      padding: 10px 20px;
+      font: 600 13px 'Inter', sans-serif;
+      cursor: pointer;
+      transition: background .2s;
+      text-decoration: none;
+      white-space: nowrap;
+    }
+    .btn-mis-canjes:hover { background: rgba(255,255,255,.28); }
+
+    /* ── Filtros ────────────────────────────────────────────── */
+    .tienda-filters {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+    .cat-pill {
+      padding: 7px 16px;
+      border-radius: 99px;
+      font: 500 13px 'Inter', sans-serif;
+      border: 1px solid var(--border);
+      background: var(--card-bg);
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all .15s;
+      white-space: nowrap;
+    }
+    .cat-pill:hover { border-color: var(--unab-red); color: var(--unab-red); }
+    .cat-pill.active { background: var(--unab-red); color: #fff; border-color: var(--unab-red); }
+
+    /* ── Grid de recompensas ────────────────────────────────── */
+    .tienda-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+      gap: 16px;
+    }
+
+    /* ── Card de recompensa ─────────────────────────────────── */
+    .reward-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-card);
+      padding: 22px 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      transition: box-shadow .2s, transform .15s;
+      position: relative;
+    }
+    .reward-card:hover { box-shadow: var(--card-shadow-hover); transform: translateY(-2px); }
+
+    .reward-emoji {
+      font-size: 40px;
+      line-height: 1;
+      text-align: center;
+      margin-bottom: 4px;
+    }
+    .reward-cat {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: .7px;
+      text-transform: uppercase;
+      color: var(--unab-red);
+      background: var(--unab-red-soft);
+      padding: 2px 8px;
+      border-radius: 99px;
+      margin-bottom: 2px;
+    }
+    .reward-name { font-size: 15px; font-weight: 700; color: var(--text-primary); }
+    .reward-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; flex: 1; }
+    .reward-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 4px;
+      gap: 8px;
+    }
+    .reward-price {
+      font-size: 18px;
+      font-weight: 800;
+      color: var(--unab-red);
+    }
+    .reward-price span { font-size: 12px; font-weight: 500; color: var(--text-secondary); }
+    .reward-stock {
+      font-size: 11px;
+      color: var(--text-secondary);
+    }
+    .reward-stock.agotado { color: #EF4444; font-weight: 600; }
+
+    .btn-canjear {
+      width: 100%;
+      background: var(--unab-red);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-sm);
+      padding: 10px;
+      font: 600 13px 'Inter', sans-serif;
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn-canjear:hover:not(:disabled) { opacity: .88; }
+    .btn-canjear:disabled {
+      background: var(--border);
+      color: var(--text-secondary);
+      cursor: not-allowed;
+    }
+
+    /* ── Empty state ────────────────────────────────────────── */
+    .tienda-empty {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--text-secondary);
+      font-size: 14px;
+      grid-column: 1/-1;
+    }
+    .tienda-empty .icon { font-size: 40px; display: block; margin-bottom: 10px; }
+
+    /* ── Modal de confirmación ──────────────────────────────── */
+    .modal-canje-body { text-align: center; padding: 8px 0; }
+    .canje-emoji-big { font-size: 60px; margin-bottom: 8px; }
+    .canje-name { font-size: 18px; font-weight: 700; color: var(--text-primary); margin-bottom: 6px; }
+    .canje-cost { font-size: 14px; color: var(--text-secondary); margin-bottom: 18px; }
+    .canje-cost strong { color: var(--unab-red); font-size: 20px; }
+
+    /* ── Modal de código de canje ───────────────────────────── */
+    .codigo-box {
+      background: var(--unab-red-soft);
+      border: 2px dashed var(--unab-red);
+      border-radius: var(--radius-card);
+      padding: 20px;
+      margin: 16px 0;
+      text-align: center;
+    }
+    .codigo-label { font-size: 12px; color: var(--unab-red); font-weight: 600; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 6px; }
+    .codigo-value { font-size: 26px; font-weight: 800; letter-spacing: 4px; color: var(--unab-red); font-family: monospace; }
+    .codigo-hint { font-size: 12px; color: var(--text-secondary); margin-top: 8px; }
+
+    /* ── Panel mis canjes ───────────────────────────────────── */
+    .canjes-panel {
+      display: none;
+      margin-bottom: 28px;
+    }
+    .canjes-panel.open { display: block; }
+    .canje-item {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 12px 16px;
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-card);
+      margin-bottom: 8px;
+    }
+    .canje-item-emoji { font-size: 28px; flex-shrink: 0; }
+    .canje-item-info { flex: 1; min-width: 0; }
+    .canje-item-name { font-weight: 600; font-size: 14px; color: var(--text-primary); }
+    .canje-item-meta { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+    .canje-item-right { text-align: right; flex-shrink: 0; }
+    .estado-badge {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 3px 10px;
+      border-radius: 99px;
+    }
+    .estado-PENDIENTE  { background: #FEF3C7; color: #D97706; }
+    .estado-ENTREGADO  { background: #D1FAE5; color: #065F46; }
+    .estado-CANCELADO  { background: #FEE2E2; color: #991B1B; }
+    [data-theme="dark"] .estado-PENDIENTE { background: #3B2A00; color: #FCD34D; }
+    [data-theme="dark"] .estado-ENTREGADO { background: #064E3B; color: #6EE7B7; }
+    [data-theme="dark"] .estado-CANCELADO { background: #450A0A; color: #FCA5A5; }
+  </style>
+</head>
+<body>
+
+<!-- ════ SIDEBAR ════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo" data-auto-logo></div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+    <a class="nav-item" href="encuentros.html"><span class="nav-icon">📅</span><span>Encuentros</span></a>
+    <a class="nav-item" href="ranking.html"><span class="nav-icon">🏆</span><span>Ranking</span></a>
+    <a class="nav-item" href="historial.html"><span class="nav-icon">⏱</span><span>Historial</span></a>
+    <a class="nav-item" href="transferencias.html"><span class="nav-icon">⇄</span><span>Transferencias</span></a>
+    <a class="nav-item active" href="tienda.html"><span class="nav-icon">🛍️</span><span>Tienda</span></a>
+    <a class="nav-item" href="feed.html"><span class="nav-icon">📣</span><span>Feed</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEstudiantes" href="gestionar-estudiantes.html"><span class="nav-icon">🎓</span><span>Gestionar Estudiantes</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEncuentros" href="gestionar-encuentros.html"><span class="nav-icon">⚙</span><span>Gestionar Encuentros</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarRecompensas" href="gestionar-recompensas.html"><span class="nav-icon">🎁</span><span>Gestionar Tienda</span></a>
+    <a class="nav-item nav-item-super" id="navGestionarAdmins" href="gestionar-admins.html"><span class="nav-icon">🛡</span><span>Gestionar Admins</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <a class="nav-item" href="perfil.html"><span class="nav-icon">👤</span><span>Perfil</span></a>
+  </div>
+</aside>
+
+<!-- ════ MAIN ════ -->
+<div class="main">
+  <header class="topnav">
+    <div class="search-wrap">
+      <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="Buscar recompensas…" id="topSearch" oninput="filtrarTexto(this.value)"/>
+    </div>
+    <div class="topnav-right">
+      <div class="user-chip-wrap">
+        <div class="user-chip" id="userChipBtn">
+          <div class="user-meta">
+            <span class="user-meta-label" data-user-faculty>Facultad de Ciencias Jurídicas y Políticas</span>
+            <span class="user-meta-name" id="topUserName" data-user-name></span>
+          </div>
+          <div class="user-avatar" id="topAvatar" data-user-avatar></div>
+        </div>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="dropdown-header">
+            <div class="d-name" data-user-name></div>
+            <div class="d-role" data-user-role></div>
+          </div>
+          <a class="dropdown-item" href="perfil.html">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>Mi Perfil
+          </a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item danger" data-logout>
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>Cerrar sesión
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="content">
+
+    <!-- Header -->
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">🛍️ Tienda DUNAB</h1>
+        <p class="page-subtitle">Canjea tus DUNAB por recompensas reales</p>
+      </div>
+      <button class="btn-secondary" onclick="toggleMisCanjes()">📋 Mis canjes</button>
+    </div>
+
+    <!-- Banner de balance -->
+    <div class="balance-banner">
+      <div class="balance-banner-left">
+        <span class="balance-banner-label">Tu balance actual</span>
+        <span class="balance-banner-amount" id="balanceAmt">— DUNAB</span>
+        <span class="balance-banner-sub">Gana más DUNAB asistiendo a encuentros</span>
+      </div>
+    </div>
+
+    <!-- Mis canjes (colapsable) -->
+    <div class="canjes-panel" id="canjesPanel">
+      <h2 style="font-size:16px;font-weight:700;margin-bottom:12px;color:var(--text-primary)">📋 Mis canjes</h2>
+      <div id="misCanjesList"><p style="color:var(--text-secondary);font-size:14px">Cargando…</p></div>
+    </div>
+
+    <!-- Filtros por categoría -->
+    <div class="tienda-filters" id="catFilters">
+      <button class="cat-pill active" data-cat="" onclick="setCategoria(this, '')">Todos</button>
+    </div>
+
+    <!-- Grid -->
+    <div class="tienda-grid" id="tiendaGrid">
+      <div class="tienda-empty"><span class="icon">⏳</span>Cargando recompensas…</div>
+    </div>
+
+  </main>
+</div>
+
+<!-- ══ Modal confirmación de canje ══ -->
+<div class="modal-overlay" id="modalConfirm" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">Confirmar canje</span>
+      <button class="modal-close" onclick="cerrarModal('modalConfirm')">✕</button>
+    </div>
+    <div class="modal-body modal-canje-body">
+      <div class="canje-emoji-big" id="confirmEmoji">🎁</div>
+      <div class="canje-name" id="confirmNombre"></div>
+      <div class="canje-cost">Se descontarán <strong id="confirmCosto"></strong> DUNAB de tu balance</div>
+      <div style="font-size:13px;color:var(--text-secondary)">
+        Balance después: <strong id="confirmBalPost" style="color:var(--text-primary)"></strong> DUNAB
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-secondary" onclick="cerrarModal('modalConfirm')">Cancelar</button>
+      <button class="btn-primary" id="btnConfirmarCanje" onclick="confirmarCanje()">✅ Confirmar canje</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ Modal código de canje ══ -->
+<div class="modal-overlay" id="modalCodigo" style="display:none">
+  <div class="modal" style="max-width:400px">
+    <div class="modal-header">
+      <span class="modal-title">¡Canje exitoso! 🎉</span>
+      <button class="modal-close" onclick="cerrarModal('modalCodigo')">✕</button>
+    </div>
+    <div class="modal-body" style="text-align:center">
+      <div style="font-size:48px;margin-bottom:8px" id="codigoEmoji">🎁</div>
+      <p style="font-size:14px;color:var(--text-secondary);margin-bottom:4px">Muestra este código al reclamarlo:</p>
+      <div class="codigo-box">
+        <div class="codigo-label">Código de canje</div>
+        <div class="codigo-value" id="codigoValor">DUN-XXXXXXXX</div>
+        <div class="codigo-hint">Preséntalo en cafetería o donde aplique</div>
+      </div>
+      <p style="font-size:12px;color:var(--text-secondary)">El administrador verificará y marcará como entregado.</p>
+    </div>
+    <div class="modal-footer">
+      <button class="btn-primary" onclick="cerrarModal('modalCodigo')">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/theme.js"></script>
+<script>
+/* ══════════════════════════════════════════════════════════
+   TIENDA — lógica principal
+══════════════════════════════════════════════════════════ */
+
+let todasRecompensas = [];
+let catActual = '';
+let textoFiltro = '';
+let canjeando = null; // { id, nombre, emoji, costo }
+
+/* ── Toast ─────────────────────────────────────────────── */
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toastContainer');
+  if (!c) return;
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.innerHTML = msg;
+  c.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+/* ── Cargar catálogo ────────────────────────────────────── */
+async function cargarCatalogo() {
+  try {
+    todasRecompensas = await apiFetch('/recompensas');
+    construirFiltrosCat();
+    renderGrid();
+    actualizarBalance();
+  } catch (err) {
+    document.getElementById('tiendaGrid').innerHTML =
+      '<div class="tienda-empty"><span class="icon">⚠️</span>No se pudo cargar la tienda.</div>';
+  }
+}
+
+function actualizarBalance() {
+  const user = Auth.getUser();
+  const bal = user?.balanceDunab ?? 0;
+  document.getElementById('balanceAmt').textContent = fmtNum(bal) + ' DUNAB';
+}
+
+/* ── Filtros de categoría ───────────────────────────────── */
+function construirFiltrosCat() {
+  const cats = [...new Set(todasRecompensas.map(r => r.categoria).filter(Boolean))];
+  const container = document.getElementById('catFilters');
+  const base = container.querySelector('[data-cat=""]');
+  // Limpiar pills previos
+  container.querySelectorAll('[data-cat]:not([data-cat=""])').forEach(el => el.remove());
+  cats.forEach(cat => {
+    const pill = document.createElement('button');
+    pill.className = 'cat-pill';
+    pill.dataset.cat = cat;
+    pill.textContent = labelCat(cat);
+    pill.onclick = () => setCategoria(pill, cat);
+    container.appendChild(pill);
+  });
+}
+
+function setCategoria(el, cat) {
+  catActual = cat;
+  document.querySelectorAll('.cat-pill').forEach(p => p.classList.remove('active'));
+  el.classList.add('active');
+  renderGrid();
+}
+
+function filtrarTexto(q) {
+  textoFiltro = q.toLowerCase();
+  renderGrid();
+}
+
+function labelCat(cat) {
+  const LABELS = {
+    CAFETERIA: '🍽️ Cafetería', INSCRIPCION: '📅 Inscripción',
+    DIGITAL: '💻 Digital', GENERAL: '🎁 General', OTRO: '✨ Otro'
+  };
+  return LABELS[cat] || cat;
+}
+
+/* ── Render del grid ────────────────────────────────────── */
+function renderGrid() {
+  const user = Auth.getUser();
+  const balance = user?.balanceDunab ?? 0;
+
+  let lista = todasRecompensas;
+  if (catActual) lista = lista.filter(r => r.categoria === catActual);
+  if (textoFiltro) lista = lista.filter(r =>
+    r.nombre.toLowerCase().includes(textoFiltro) ||
+    (r.descripcion || '').toLowerCase().includes(textoFiltro)
+  );
+
+  const grid = document.getElementById('tiendaGrid');
+  if (lista.length === 0) {
+    grid.innerHTML = '<div class="tienda-empty"><span class="icon">🔍</span>No hay recompensas en esta categoría.</div>';
+    return;
+  }
+
+  grid.innerHTML = lista.map(r => {
+    const agotado = r.stock === 0;
+    const sinBalance = balance < r.costoDunab;
+    const deshabilitado = agotado || sinBalance;
+    const stockTxt = r.stock === -1 ? '' : r.stock === 0
+      ? '<span class="reward-stock agotado">Agotado</span>'
+      : `<span class="reward-stock">${r.stock} disponibles</span>`;
+
+    return `
+      <div class="reward-card">
+        <div class="reward-emoji">${esc(r.emoji || '🎁')}</div>
+        <span class="reward-cat">${esc(labelCat(r.categoria))}</span>
+        <div class="reward-name">${esc(r.nombre)}</div>
+        ${r.descripcion ? `<div class="reward-desc">${esc(r.descripcion)}</div>` : '<div class="reward-desc"></div>'}
+        <div class="reward-footer">
+          <div class="reward-price">${fmtNum(r.costoDunab)} <span>DUNAB</span></div>
+          ${stockTxt}
+        </div>
+        <button class="btn-canjear" ${deshabilitado ? 'disabled' : ''}
+          onclick="abrirConfirm(${r.id}, '${esc(r.nombre)}', '${esc(r.emoji||'🎁')}', ${r.costoDunab})">
+          ${agotado ? 'Agotado' : sinBalance ? 'Saldo insuficiente' : '🛒 Canjear'}
+        </button>
+      </div>`;
+  }).join('');
+}
+
+function esc(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+}
+
+function fmtNum(n) {
+  return (n ?? 0).toLocaleString('es-CO');
+}
+
+/* ── Modal confirmar canje ──────────────────────────────── */
+function abrirConfirm(id, nombre, emoji, costo) {
+  canjeando = { id, nombre, emoji, costo };
+  const user = Auth.getUser();
+  const balPost = (user?.balanceDunab ?? 0) - costo;
+
+  document.getElementById('confirmEmoji').textContent = emoji;
+  document.getElementById('confirmNombre').textContent = nombre;
+  document.getElementById('confirmCosto').textContent = fmtNum(costo);
+  document.getElementById('confirmBalPost').textContent = fmtNum(balPost);
+  document.getElementById('modalConfirm').style.display = 'flex';
+}
+
+async function confirmarCanje() {
+  if (!canjeando) return;
+  const btn = document.getElementById('btnConfirmarCanje');
+  btn.disabled = true;
+  btn.textContent = 'Canjeando…';
+
+  try {
+    const resp = await apiFetch(`/recompensas/${canjeando.id}/canjear`, { method: 'POST' });
+
+    // Actualizar balance local
+    const user = Auth.getUser();
+    if (user) {
+      user.balanceDunab = (user.balanceDunab ?? 0) - canjeando.costo;
+      Auth.setUser(user);
+    }
+
+    cerrarModal('modalConfirm');
+
+    // Mostrar código
+    document.getElementById('codigoEmoji').textContent = canjeando.emoji;
+    document.getElementById('codigoValor').textContent = resp.codigoCanje;
+    document.getElementById('modalCodigo').style.display = 'flex';
+
+    actualizarBalance();
+    renderGrid();
+    showToast(`¡Canjeaste ${esc(canjeando.nombre)}! 🎉`, 'success');
+  } catch (err) {
+    showToast('Error: ' + (err.message || 'No se pudo completar el canje.'), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '✅ Confirmar canje';
+  }
+}
+
+/* ── Mis canjes ─────────────────────────────────────────── */
+function toggleMisCanjes() {
+  const panel = document.getElementById('canjesPanel');
+  if (panel.classList.toggle('open')) cargarMisCanjes();
+}
+
+async function cargarMisCanjes() {
+  const lista = document.getElementById('misCanjesList');
+  lista.innerHTML = '<p style="color:var(--text-secondary);font-size:14px">Cargando…</p>';
+  try {
+    const canjes = await apiFetch('/recompensas/mis-canjes');
+    if (!canjes.length) {
+      lista.innerHTML = '<p style="color:var(--text-secondary);font-size:14px">Aún no has canjeado ninguna recompensa.</p>';
+      return;
+    }
+    lista.innerHTML = canjes.map(c => `
+      <div class="canje-item">
+        <div class="canje-item-emoji">${esc(c.recompensaEmoji || '🎁')}</div>
+        <div class="canje-item-info">
+          <div class="canje-item-name">${esc(c.recompensaNombre || '—')}</div>
+          <div class="canje-item-meta">${fmtFecha(c.canjeadoEn)} · ${fmtNum(c.costoDunab)} DUNAB</div>
+        </div>
+        <div class="canje-item-right">
+          <span class="estado-badge estado-${c.estado}">${c.estado}</span>
+          <div style="font-size:11px;color:var(--text-secondary);margin-top:4px;font-family:monospace">${esc(c.codigoCanje)}</div>
+        </div>
+      </div>`).join('');
+  } catch (err) {
+    lista.innerHTML = '<p style="color:#EF4444;font-size:14px">Error cargando canjes.</p>';
+  }
+}
+
+function fmtFecha(iso) {
+  if (!iso) return '';
+  return new Date(iso).toLocaleDateString('es-CO', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+/* ── Modales ────────────────────────────────────────────── */
+function cerrarModal(id) {
+  document.getElementById(id).style.display = 'none';
+}
+
+document.querySelectorAll('.modal-overlay').forEach(o => {
+  o.addEventListener('click', e => { if (e.target === o) o.style.display = 'none'; });
+});
+
+/* ── Init ───────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+
+  const chip = document.getElementById('userChipBtn');
+  const drop = document.getElementById('userDropdown');
+  if (chip && drop) {
+    chip.addEventListener('click', e => { e.stopPropagation(); drop.classList.toggle('open'); });
+    document.addEventListener('click', () => drop.classList.remove('open'));
+  }
+
+  cargarCatalogo();
+});
+</script>
+</body>
+</html>

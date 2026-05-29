@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Ranking – DUNAB</title>
+  
+  <script>
+    (function(){
+      try {
+        var u = JSON.parse(localStorage.getItem('dunab_user')||'null');
+        var t = (u && u.temaPreferencia) || localStorage.getItem('dunab_theme') || 'CLARO';
+        if (t === 'OSCURO') document.documentElement.setAttribute('data-theme','dark');
+      } catch(e){}
+    })();
+  </script>
+  <link rel="stylesheet" href="css/dunab-theme.css"/>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+            
+</style>
+</head>
+<body>
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo" data-auto-logo></div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+    <a class="nav-item" href="encuentros.html"><span class="nav-icon">📅</span><span>Encuentros</span></a>
+    <a class="nav-item active" href="ranking.html"><span class="nav-icon">🏆</span><span>Ranking</span></a>
+    <a class="nav-item" href="historial.html"><span class="nav-icon">⏱</span><span>Historial</span></a>
+    <a class="nav-item" href="transferencias.html"><span class="nav-icon">⇄</span><span>Transferencias</span></a>
+    <a class="nav-item" href="feed.html"><span class="nav-icon">📣</span><span>Feed</span></a>
+    <a class="nav-item" href="tienda.html"><span class="nav-icon">🛍️</span><span>Tienda</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEstudiantes" href="gestionar-estudiantes.html"><span class="nav-icon">🎓</span><span>Gestionar Estudiantes</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEncuentros" href="gestionar-encuentros.html"><span class="nav-icon">⚙</span><span>Gestionar Encuentros</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarRecompensas" href="gestionar-recompensas.html"><span class="nav-icon">🎁</span><span>Gestionar Tienda</span></a>
+    <a class="nav-item nav-item-super" id="navGestionarAdmins" href="gestionar-admins.html"><span class="nav-icon">🛡</span><span>Gestionar Admins</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <a class="nav-item" href="perfil.html"><span class="nav-icon">👤</span><span>Perfil</span></a>
+  </div>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<div class="main">
+
+  <header class="topnav">
+  <div class="search-wrap">
+    <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" placeholder="Buscar encuentros, estudiantes…" id="topSearch"/>
+  </div>
+  <div class="topnav-right">
+    <div class="user-chip-wrap">
+      <div class="user-chip" id="userChipBtn">
+        <div class="user-meta">
+          <span class="user-meta-label" data-user-faculty>Facultad de Ciencias Jurídicas y Políticas</span>
+          <span class="user-meta-name" id="topUserName" data-user-name>Usuario</span>
+        </div>
+        <div class="user-avatar" id="topAvatar" data-user-avatar>U</div>
+      </div>
+      <div class="user-dropdown" id="userDropdown">
+        <div class="dropdown-header">
+          <div class="d-name" id="dropName" data-user-name>Usuario</div>
+          <div class="d-role" id="dropRole" data-user-role>Estudiante</div>
+        </div>
+        <a class="dropdown-item" href="perfil.html">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+          Mi Perfil
+        </a>
+        <a class="dropdown-item" href="historial.html">
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z"/><path d="M12 8v4l3 3"/></svg>
+          Historial
+        </a>
+        <div class="dropdown-divider"></div>
+        <div class="dropdown-item danger" id="dropLogout" data-logout>
+          <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+          Cerrar sesión
+        </div>
+      </div>
+    </div>
+  </div>
+</header>
+
+  <main class="content">
+
+    <!-- Header -->
+    <div class="page-header">
+      <h1 class="page-title">Ranking</h1>
+      <div class="period-tabs">
+        <button class="period-tab" onclick="setPeriod(this,'semana')">Semana</button>
+        <button class="period-tab active" onclick="setPeriod(this,'mes')">Mes</button>
+        <button class="period-tab" onclick="setPeriod(this,'semestre')">Semestre</button>
+        <button class="period-tab" onclick="setPeriod(this,'total')">Global</button>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <div class="stats-strip">
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FDE8ED">👥</div>
+        <div>
+          <div class="stat-val" id="rStatTotal">—</div>
+          <div class="stat-lbl">Estudiantes en ranking</div>
+          <div class="stat-delta delta-up" id="rStatTotalSub"> </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#FEF3C7">🏆</div>
+        <div>
+          <div class="stat-val" id="rStatTop">—</div>
+          <div class="stat-lbl">Mejor puntaje (1°)</div>
+          <div class="stat-delta delta-up" id="rStatTopNombre"> </div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#DBEAFE">📊</div>
+        <div>
+          <div class="stat-val" id="rStatPromedio">—</div>
+          <div class="stat-lbl">Promedio general</div>
+          <div class="stat-delta same">Balance promedio</div>
+        </div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-icon" style="background:#D1FAE5">🎯</div>
+        <div>
+          <div class="stat-val" id="rStatMeta">—</div>
+          <div class="stat-lbl">Estudiantes en meta</div>
+          <div class="stat-delta same">≥ 10.000 DUNAB</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Mi posición banner -->
+    <div class="my-banner">
+      <div class="my-pos-badge">
+        <span class="pos-num" style="font-size:24px;font-weight:800" id="bannerPos">#—</span>
+        <span class="pos-lbl">tu lugar</span>
+      </div>
+      <div class="my-info">
+        <div class="my-name" id="bannerNombre">Cargando...</div>
+        <div class="my-sub" id="bannerSub">—</div>
+      </div>
+      <div class="my-progress-wrap">
+        <div class="my-progress-lbl">
+          <span>Progreso a graduación</span>
+          <span id="bannerPct">0%</span>
+        </div>
+        <div class="my-progress-bar">
+          <div class="my-progress-fill" id="bannerFill" style="width:0%"></div>
+        </div>
+        <div style="font-size:11px;opacity:.75;margin-top:4px" id="bannerMeta">0 / 10.000 DUNAB</div>
+      </div>
+      <div class="my-dunab">
+        <div class="dunab-num" id="bannerDunab">—</div>
+        <div class="dunab-lbl">DUNAB acumulados</div>
+      </div>
+    </div>
+
+    <!-- Podio top 3 — generado dinámicamente -->
+    <div class="podium-section" id="podiumSection">
+      <!-- 2do -->
+      <div class="podium-card rank-2" id="podio2">
+        <div class="podium-avatar" id="podio2Av">—<div class="av-ring"></div></div>
+        <div class="podium-rank">🥈 2° Lugar</div>
+        <div class="podium-name" id="podio2Nombre">—</div>
+        <div class="podium-code" id="podio2Cod">—</div>
+        <div class="podium-score" id="podio2Score">— <span>DUNAB</span></div>
+        <div class="badges-row"><span class="badge-icon">⭐</span></div>
+        <div class="podium-delta same" id="podio2Delta">—</div>
+      </div>
+      <!-- 1ro -->
+      <div class="podium-card rank-1" id="podio1">
+        <div class="crown">👑</div>
+        <div class="podium-avatar" id="podio1Av">—<div class="av-ring"></div></div>
+        <div class="podium-rank">🥇 1° Lugar</div>
+        <div class="podium-name" id="podio1Nombre">—</div>
+        <div class="podium-code" id="podio1Cod">—</div>
+        <div class="podium-score" id="podio1Score">— <span>DUNAB</span></div>
+        <div class="badges-row"><span class="badge-icon">👑</span><span class="badge-icon">🔥</span></div>
+        <div class="podium-delta same" id="podio1Delta">— Líder actual</div>
+      </div>
+      <!-- 3ro -->
+      <div class="podium-card rank-3" id="podio3">
+        <div class="podium-avatar" id="podio3Av">—<div class="av-ring"></div></div>
+        <div class="podium-rank">🥉 3° Lugar</div>
+        <div class="podium-name" id="podio3Nombre">—</div>
+        <div class="podium-code" id="podio3Cod">—</div>
+        <div class="podium-score" id="podio3Score">— <span>DUNAB</span></div>
+        <div class="badges-row"><span class="badge-icon">🔥</span></div>
+        <div class="podium-delta same" id="podio3Delta">—</div>
+      </div>
+    </div>
+
+    <!-- Tabla completa -->
+    <div class="table-card">
+      <div class="table-card-header">
+        <div>
+          <span class="table-card-title">Clasificación General</span>
+          <span class="table-count" id="tableCount">— 20 estudiantes</span>
+        </div>
+        <div class="filter-row">
+          <input class="search-mini" type="text" id="searchRank" placeholder="🔍 Buscar estudiante…" oninput="filterRank()"/>
+          <select class="filter-select" id="filterFacultad" onchange="filterRank()">
+            <option value="">Todas las facultades</option>
+            <option value="Derecho">Derecho</option>
+            <option value="Ingeniería">Ingeniería</option>
+            <option value="Economía">Economía</option>
+            <option value="Psicología">Psicología</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th style="width:60px;text-align:center" onclick="sortRank('pos')">Pos <span class="sort-icon">↕</span></th>
+              <th onclick="sortRank('nombre')">Estudiante <span class="sort-icon">↕</span></th>
+              <th onclick="sortRank('facultad')">Facultad <span class="sort-icon">↕</span></th>
+              <th onclick="sortRank('dunab')">DUNAB <span class="sort-icon">↕</span></th>
+              <th style="min-width:150px">Progreso Meta</th>
+              <th>Logros</th>
+              <th onclick="sortRank('trend')">Tendencia <span class="sort-icon">↕</span></th>
+            </tr>
+          </thead>
+          <tbody id="rankBody"></tbody>
+        </table>
+      </div>
+
+      <div class="pagination">
+        <span class="pag-info" id="pagInfo">Mostrando 1–20 de 20</span>
+        <div class="pag-btns">
+          <button class="pag-btn"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M15 18l-6-6 6-6"/></svg></button>
+          <button class="pag-btn active">1</button>
+          <button class="pag-btn">2</button>
+          <button class="pag-btn">3</button>
+          <button class="pag-btn"><svg fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
+      </div>
+    </div>
+  </main>
+</div>
+
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/theme.js"></script>
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+//  RANKING — Datos 100% desde la API
+// ═══════════════════════════════════════════════════════════════════════════
+
+const AVATARS = [
+  '#8C1D40','#1E40AF','#065F46','#92400E','#6B21A8',
+  '#155E75','#9D174D','#166534','#1E3A5F','#7C2D12'
+];
+
+// students cargados desde la API; disponibles para filtros/ordenación
+let students = [];
+let sortKey = 'pos', sortAsc = true;
+
+// ─── Convierte respuesta API → formato de fila ─────────────────────────────
+function apiToStudent(r, i, yo) {
+  const nombre = r.nombre || '';
+  return {
+    id:       r.usuarioId,
+    pos:      r.posicion,
+    nombre:   nombre,
+    codigo:   r.codigo || '',
+    initials: nombre.split(' ').slice(0,2).map(w => w[0] || '?').join('').toUpperCase(),
+    facultad: r.carrera || '—',
+    dunab:    r.balanceDunab,
+    racha:    r.rachaDias || 0,
+    color:    AVATARS[i % AVATARS.length],
+    isMe:     yo && r.usuarioId == yo.id,
+  };
+}
+
+// ─── RENDER ────────────────────────────────────────────────────────────────
+function renderRank(data) {
+  const tbody = document.getElementById('rankBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+
+  if (!data.length) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:40px;color:#9CA3AF">
+      Aún no hay estudiantes en el ranking. ¡Participa en un encuentro para aparecer aquí!
+    </td></tr>`;
+    const tcEl = document.getElementById('tableCount');
+    const pgEl = document.getElementById('pagInfo');
+    if (tcEl) tcEl.textContent = '— 0 estudiantes';
+    if (pgEl) pgEl.textContent = 'Mostrando 0 de 0';
+    return;
+  }
+
+  data.forEach(s => {
+    const pct = Math.min(100, Math.round((s.dunab / 10000) * 100));
+    const tr  = document.createElement('tr');
+    if (s.isMe) tr.classList.add('me');
+
+    let posCell = s.pos === 1 ? '<span class="pos-medal">🥇</span>'
+                : s.pos === 2 ? '<span class="pos-medal">🥈</span>'
+                : s.pos === 3 ? '<span class="pos-medal">🥉</span>'
+                : `<span class="pos-num">#${s.pos}</span>`;
+
+    const rachaLbl = s.racha > 0
+      ? `<span style="color:#F59E0B">🔥 ${s.racha} días</span>`
+      : '<span style="color:#9CA3AF">— Sin racha</span>';
+
+    tr.innerHTML = `
+      <td><div class="cell-pos">${posCell}</div></td>
+      <td>
+        <div class="cell-student">
+          <div class="stu-avatar" style="background:${s.color}">${s.initials}</div>
+          <div>
+            <div class="stu-name">
+              ${s.nombre}
+              ${s.isMe ? '<span class="you-tag">TÚ</span>' : ''}
+            </div>
+            <div class="stu-code">${s.codigo || 'Sin código'}</div>
+          </div>
+        </div>
+      </td>
+      <td style="font-size:13px;color:var(--text-secondary)">${s.facultad}</td>
+      <td>
+        <div class="cell-score">${s.dunab.toLocaleString('es-CO')}</div>
+        <div class="score-sub">DUNAB</div>
+      </td>
+      <td>
+        <div class="prog-mini-wrap">
+          <div class="prog-mini-bar">
+            <div class="prog-mini-fill" style="width:${pct}%"></div>
+          </div>
+          <div class="prog-mini-lbl">
+            <span>${pct}%</span>
+            <span>${Math.max(0, 10000 - s.dunab).toLocaleString('es-CO')} restantes</span>
+          </div>
+        </div>
+      </td>
+      <td><div class="badges-cell"><span class="badge-icon">⭐</span></div></td>
+      <td>${rachaLbl}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  const tcEl = document.getElementById('tableCount');
+  const pgEl = document.getElementById('pagInfo');
+  if (tcEl) tcEl.textContent = `— ${data.length} estudiante${data.length !== 1 ? 's' : ''}`;
+  if (pgEl) pgEl.textContent = `Mostrando 1–${data.length} de ${data.length}`;
+}
+
+// ─── FILTER ────────────────────────────────────────────────────────────────
+function filterRank() {
+  const q   = (document.getElementById('searchRank')?.value || '').toLowerCase();
+  const fac = document.getElementById('filterFacultad')?.value || '';
+  const filtered = students.filter(s => {
+    const matchQ = !q || s.nombre.toLowerCase().includes(q) || s.codigo.toLowerCase().includes(q);
+    const matchF = !fac || s.facultad === fac;
+    return matchQ && matchF;
+  });
+  renderRank(filtered);
+}
+
+// ─── SORT ──────────────────────────────────────────────────────────────────
+function sortRank(key) {
+  if (sortKey === key) sortAsc = !sortAsc; else { sortKey = key; sortAsc = true; }
+  document.querySelectorAll('th').forEach(th => {
+    const icon = th.querySelector('.sort-icon');
+    if (!icon) return;
+    const thKey = th.getAttribute('onclick')?.match(/sortRank\('(.+?)'\)/)?.[1];
+    th.classList.toggle('sorted', thKey === key);
+    icon.textContent = (thKey === key) ? (sortAsc ? '↑' : '↓') : '↕';
+  });
+  const sorted = [...students].sort((a, b) => {
+    let va = a[key], vb = b[key];
+    if (typeof va === 'string') { va = va.toLowerCase(); vb = vb.toLowerCase(); }
+    return sortAsc ? (va > vb ? 1 : -1) : (va < vb ? 1 : -1);
+  });
+  renderRank(sorted);
+}
+
+// ─── PERIOD ────────────────────────────────────────────────────────────────
+function setPeriod(el, period) {
+  document.querySelectorAll('.period-tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  const labels = { semana:'Esta semana', mes:'Este mes', semestre:'Este semestre', total:'Global' };
+  showToast(`📊 Mostrando ranking: ${labels[period]}`, 'info');
+}
+
+
+// ─── HELPER: poblar una tarjeta del podio ──────────────────────────────────
+function poblarPodio(n, usuario) {
+  if (!usuario) return;
+  const initials = usuario.nombre.split(' ').slice(0,2).map(w=>w[0]).join('').toUpperCase();
+  const av  = document.getElementById(`podio${n}Av`);
+  const nom = document.getElementById(`podio${n}Nombre`);
+  const cod = document.getElementById(`podio${n}Cod`);
+  const sc  = document.getElementById(`podio${n}Score`);
+  const dl  = document.getElementById(`podio${n}Delta`);
+  if (av)  { av.childNodes[0].textContent = initials; }
+  if (nom) nom.textContent = usuario.nombre;
+  if (cod) cod.textContent = 'Cód. ' + (usuario.codigo || '—');
+  if (sc)  sc.innerHTML = fmtNum(usuario.balanceDunab) + ' <span>DUNAB</span>';
+  if (dl)  dl.textContent = n === 1 ? '— Líder del ranking' : `🔥 Racha: ${usuario.rachaDias} días`;
+}
+
+// ─── CARGA DESDE LA API ─────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', async () => {
+  const tbody = document.getElementById('rankBody');
+  if (tbody) {
+    tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:#9CA3AF">
+      <span style="font-size:24px">⏳</span><br>Cargando ranking...
+    </td></tr>`;
+  }
+
+  try {
+    const yo = Auth.getUser();
+    const [ranking, miPos, perfil] = await Promise.all([
+      RankingAPI.getRanking(),
+      RankingAPI.getMiPosicion(),
+      UsuarioAPI.getMiPerfil()
+    ]);
+
+    // Convertir datos de la API al formato interno
+    students = ranking.map((r, i) => apiToStudent(r, i, yo));
+
+    // Renderizar tabla
+    renderRank(students);
+
+    // ── Stats superiores ────────────────────────────────────────────────────
+    const promedio = ranking.length
+      ? Math.round(ranking.reduce((s, r) => s + r.balanceDunab, 0) / ranking.length)
+      : 0;
+    const enMeta = ranking.filter(r => r.balanceDunab >= 10000).length;
+
+    const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+    set('rStatTotal',    ranking.length);
+    set('rStatTop',      ranking[0] ? fmtNum(ranking[0].balanceDunab) + ' D' : '— D');
+    set('rStatTopNombre',ranking[0] ? ranking[0].nombre.split(' ')[0] : '—');
+    set('rStatPromedio', fmtNum(promedio) + ' D');
+    set('rStatMeta',     enMeta);
+
+    // ── Banner "Mi posición" ─────────────────────────────────────────────────
+    const pct = Math.min(100, ((perfil.balanceDunab / 10000) * 100)).toFixed(1);
+    set('bannerPos',   '#' + miPos.posicion);
+    set('bannerNombre', perfil.nombre);
+    set('bannerSub',   `${perfil.carrera || 'UNAB'} · Cód. ${perfil.codigo || '—'} · 🔥 Racha: ${perfil.rachaDias || 0} días`);
+    set('bannerPct',   pct + '%');
+    set('bannerMeta',  fmtNum(perfil.balanceDunab) + ' / 10.000 DUNAB');
+    set('bannerDunab', fmtNum(perfil.balanceDunab));
+    const fill = document.getElementById('bannerFill');
+    if (fill) fill.style.width = pct + '%';
+
+    // ── Podio top 3 ─────────────────────────────────────────────────────────
+    poblarPodio(1, ranking[0]);
+    poblarPodio(2, ranking[1]);
+    poblarPodio(3, ranking[2]);
+
+    // Ocultar cards del podio si no hay suficientes usuarios
+    if (!ranking[1]) document.getElementById('podio2')?.style.setProperty('display','none');
+    if (!ranking[2]) document.getElementById('podio3')?.style.setProperty('display','none');
+
+    // ── Guardar estadísticas del banner superior (compatibilidad) ────────────
+    const statEls = document.querySelectorAll('.stat-number');
+    if (statEls[0]) statEls[0].textContent = ranking.length;
+    if (statEls[1] && ranking[0]) statEls[1].textContent = fmtNum(ranking[0].balanceDunab) + ' D';
+    if (statEls[2]) statEls[2].textContent = '#' + miPos.posicion;
+    if (statEls[3]) statEls[3].textContent = miPos.porcentajeMeta + '%';
+
+    // Podio top 3
+    ['gold','silver','bronze'].forEach((cls, i) => {
+      const el = document.querySelector(`.podium-${cls}, .podium .rank-${i+1}`);
+      if (el && ranking[i]) {
+        const nameEl = el.querySelector('.podium-name, .p-name');
+        const valEl  = el.querySelector('.podium-val, .p-val');
+        if (nameEl) nameEl.textContent = ranking[i].nombre.split(' ')[0];
+        if (valEl)  valEl.textContent  = fmtNum(ranking[i].balanceDunab) + ' D';
+      }
+    });
+
+    // Mi posición en el banner
+    const posEl = document.querySelector('.my-rank-pos, .rank-position, [data-my-pos]');
+    if (posEl) posEl.textContent = '#' + miPos.posicion;
+    const pctEl = document.querySelector('.rank-pct, [data-my-pct]');
+    if (pctEl) pctEl.textContent = miPos.porcentajeMeta + '% hacia la graduación';
+
+    // Scroll a la fila propia
+    setTimeout(() => {
+      const meRow = document.querySelector('tr.me');
+      if (meRow) meRow.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }, 300);
+
+  } catch (err) {
+    console.error('Error cargando ranking:', err);
+    if (tbody) {
+      tbody.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:30px;color:#EF4444">
+        ⚠️ No se pudo cargar el ranking. Verifica que el backend esté activo.
+      </td></tr>`;
+    }
+  }
+});
+
+// ── Dropdown de usuario ──────────────────────────────────────────────────────
+(function initDropdown() {
+  const btn  = document.getElementById('userChipBtn');
+  const drop = document.getElementById('userDropdown');
+  if (!btn || !drop) return;
+  btn.addEventListener('click', e => { e.stopPropagation(); drop.classList.toggle('open'); });
+  document.addEventListener('click', () => drop.classList.remove('open'));
+  const logoutBtn = document.getElementById('dropLogout');
+  if (logoutBtn) logoutBtn.addEventListener('click', () => Auth.logout());
+
+  // Poblar datos del dropdown desde Auth
+  const user = Auth.getUser();
+  if (user) {
+    const av = document.getElementById('topAvatar');
+    const nm = document.getElementById('topUserName');
+    const dn = document.getElementById('dropName');
+    const dr = document.getElementById('dropRole');
+    const initials = (user.nombre||'U').split(' ').map(w=>w[0]).slice(0,2).join('').toUpperCase();
+    if (av) av.textContent = initials;
+    if (nm) nm.textContent = user.nombre ? user.nombre.split(' ')[0] + (user.nombre.split(' ')[1] ? ' ' + user.nombre.split(' ')[1][0] + '.' : '') : 'Usuario';
+    if (dn) dn.textContent = user.nombre || '—';
+    if (dr) dr.textContent = user.rol === 'ADMIN' ? 'Administrador' : 'Estudiante';
+  }
+})();
+
+// Mostrar enlaces de gestión según el rol del usuario
+(function showAdminLinks() {
+  const user = Auth.getUser();
+  if (!user) return;
+  if (user.rol === 'ADMIN' || user.rol === 'SUPERADMIN') {
+    const elEst = document.getElementById('navGestionarEstudiantes');
+    if (elEst) elEst.classList.add('visible');
+  }
+  if (user.rol === 'SUPERADMIN') {
+    const el = document.getElementById('navGestionarAdmins');
+    if (el) el.classList.add('visible');
+  }
+})();
+</script>
+
+</body>
+</html>

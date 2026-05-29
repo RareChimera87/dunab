@@ -1,0 +1,735 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Feed – DUNAB</title>
+
+  <script>
+    (function(){
+      try {
+        var u = JSON.parse(localStorage.getItem('dunab_user')||'null');
+        var t = (u && u.temaPreferencia) || localStorage.getItem('dunab_theme') || 'CLARO';
+        if (t === 'OSCURO') document.documentElement.setAttribute('data-theme','dark');
+      } catch(e){}
+    })();
+  </script>
+  <link rel="stylesheet" href="css/dunab-theme.css"/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet"/>
+  <style>
+    /* ── Aliases para variables del tema ─────────── */
+    :root {
+      --accent:      var(--unab-red);
+      --accent-soft: var(--unab-red-soft);
+      --card:        var(--card-bg);
+      --bg:          var(--body-bg);
+      --text:        var(--text-primary);
+      --text-muted:  var(--text-secondary);
+      --shadow:      var(--card-shadow);
+      --font:        'Inter', system-ui, sans-serif;
+      --radius-lg:   var(--radius-card);
+      --radius-md:   10px;
+    }
+
+    /* ── Feed layout ─────────────────────────────── */
+    .feed-layout {
+      display: grid;
+      grid-template-columns: 1fr 320px;
+      gap: 24px;
+      align-items: start;
+    }
+    @media (max-width: 900px) { .feed-layout { grid-template-columns: 1fr; } }
+
+    /* ── Composer ────────────────────────────────── */
+    .composer-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    .composer-header {
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .composer-avatar {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .composer-input {
+      flex: 1;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 10px 14px;
+      font: 500 14px/1.5 var(--font);
+      color: var(--text);
+      resize: vertical;
+      min-height: 70px;
+      transition: border-color .2s;
+      outline: none;
+    }
+    .composer-input:focus { border-color: var(--accent); }
+    .composer-input::placeholder { color: var(--text-muted); }
+    .composer-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-left: 52px;
+    }
+    .composer-count {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .composer-count.near { color: #F59E0B; }
+    .composer-count.over { color: #EF4444; }
+    .btn-publicar {
+      background: var(--accent);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius-md);
+      padding: 8px 20px;
+      font: 600 13px var(--font);
+      cursor: pointer;
+      transition: opacity .2s;
+    }
+    .btn-publicar:disabled { opacity: .5; cursor: not-allowed; }
+    .btn-publicar:not(:disabled):hover { opacity: .88; }
+
+    /* ── Filter tabs ─────────────────────────────── */
+    .feed-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+    .feed-tab {
+      padding: 7px 16px;
+      border-radius: 20px;
+      font: 500 13px var(--font);
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text-muted);
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all .2s;
+    }
+    .feed-tab:hover { color: var(--text); border-color: var(--accent); }
+    .feed-tab.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    /* ── Feed list ───────────────────────────────── */
+    .feed-list { display: flex; flex-direction: column; gap: 12px; }
+
+    /* ── Feed card ───────────────────────────────── */
+    .feed-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      display: flex;
+      gap: 14px;
+      align-items: flex-start;
+      transition: box-shadow .2s;
+      animation: feedIn .25s ease;
+    }
+    @keyframes feedIn {
+      from { opacity: 0; transform: translateY(-8px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .feed-card:hover { box-shadow: 0 4px 16px var(--shadow); }
+
+    .feed-av {
+      width: 42px; height: 42px;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-weight: 700;
+      font-size: 15px;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    /* Distintos colores por tipo */
+    .feed-av.tipo-INSCRIPCION { background: #3B82F6; }
+    .feed-av.tipo-LOGRO       { background: #8B5CF6; }
+    .feed-av.tipo-HITO        { background: #F59E0B; }
+    .feed-av.tipo-PUBLICACION { background: var(--accent); }
+
+    .feed-body { flex: 1; min-width: 0; }
+    .feed-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 4px;
+      flex-wrap: wrap;
+    }
+    .feed-name {
+      font-weight: 600;
+      font-size: 14px;
+      color: var(--text);
+    }
+    .feed-chip {
+      font-size: 11px;
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 99px;
+    }
+    .chip-INSCRIPCION { background: #EFF6FF; color: #3B82F6; }
+    .chip-LOGRO       { background: #F5F3FF; color: #8B5CF6; }
+    .chip-HITO        { background: #FFFBEB; color: #D97706; }
+    .chip-PUBLICACION { background: var(--accent-soft,#F0F9FF); color: var(--accent); }
+    [data-theme="dark"] .chip-INSCRIPCION { background: #1E3A5F; color: #93C5FD; }
+    [data-theme="dark"] .chip-LOGRO       { background: #2D1B69; color: #C4B5FD; }
+    [data-theme="dark"] .chip-HITO        { background: #3B2A00; color: #FCD34D; }
+    [data-theme="dark"] .chip-PUBLICACION { background: #0C2340; color: var(--accent); }
+
+    .feed-time {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-left: auto;
+    }
+    .feed-text {
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.55;
+      word-break: break-word;
+    }
+    .feed-cuerpo {
+      margin-top: 8px;
+      font-size: 14px;
+      color: var(--text);
+      line-height: 1.6;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+    .feed-meta-enc {
+      margin-top: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 5px 10px;
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+    .btn-del-feed {
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 16px;
+      padding: 0 2px;
+      border-radius: 4px;
+      transition: color .15s;
+      flex-shrink: 0;
+    }
+    .btn-del-feed:hover { color: #EF4444; }
+
+    /* ── Load more ───────────────────────────────── */
+    .btn-load-more {
+      display: block;
+      width: 100%;
+      margin-top: 16px;
+      padding: 12px;
+      background: var(--card);
+      border: 1px dashed var(--border);
+      border-radius: var(--radius-md);
+      font: 500 13px var(--font);
+      color: var(--text-muted);
+      cursor: pointer;
+      transition: all .2s;
+    }
+    .btn-load-more:hover { background: var(--bg); color: var(--accent); border-color: var(--accent); }
+    .btn-load-more:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Sidebar de stats ───────────────────────── */
+    .feed-stats-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .feed-stats-title {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      letter-spacing: .6px;
+      margin-bottom: 14px;
+    }
+    .feed-stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .feed-stat-row:last-child { border-bottom: none; }
+    .feed-stat-label { font-size: 13px; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+    .feed-stat-val   { font-size: 14px; font-weight: 700; color: var(--text); }
+
+    .feed-empty {
+      text-align: center;
+      padding: 48px 20px;
+      color: var(--text-muted);
+      font-size: 14px;
+    }
+    .feed-empty .empty-icon { font-size: 36px; display: block; margin-bottom: 10px; }
+
+    .polling-indicator {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+    }
+    .polling-dot {
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: #10B981;
+      animation: pulse-dot 2s infinite;
+    }
+    @keyframes pulse-dot {
+      0%,100% { opacity: 1; } 50% { opacity: .3; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ════════════ SIDEBAR ════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo" data-auto-logo></div>
+  <nav class="sidebar-nav">
+    <a class="nav-item" href="dashboard.html"><span class="nav-icon">▦</span><span>Dashboard</span></a>
+    <a class="nav-item" href="encuentros.html"><span class="nav-icon">📅</span><span>Encuentros</span></a>
+    <a class="nav-item" href="ranking.html"><span class="nav-icon">🏆</span><span>Ranking</span></a>
+    <a class="nav-item" href="historial.html"><span class="nav-icon">⏱</span><span>Historial</span></a>
+    <a class="nav-item" href="transferencias.html"><span class="nav-icon">⇄</span><span>Transferencias</span></a>
+    <a class="nav-item active" href="feed.html"><span class="nav-icon">📣</span><span>Feed</span></a>
+    <a class="nav-item" href="tienda.html"><span class="nav-icon">🛍️</span><span>Tienda</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEstudiantes" href="gestionar-estudiantes.html"><span class="nav-icon">🎓</span><span>Gestionar Estudiantes</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarEncuentros" href="gestionar-encuentros.html"><span class="nav-icon">⚙</span><span>Gestionar Encuentros</span></a>
+    <a class="nav-item nav-item-admin" id="navGestionarRecompensas" href="gestionar-recompensas.html"><span class="nav-icon">🎁</span><span>Gestionar Tienda</span></a>
+    <a class="nav-item nav-item-super" id="navGestionarAdmins" href="gestionar-admins.html"><span class="nav-icon">🛡</span><span>Gestionar Admins</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <a class="nav-item" href="perfil.html"><span class="nav-icon">👤</span><span>Perfil</span></a>
+  </div>
+</aside>
+
+<!-- ════════════ MAIN ════════════ -->
+<div class="main">
+
+  <header class="topnav">
+    <div class="search-wrap">
+      <svg class="search-icon" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" placeholder="Buscar encuentros, estudiantes…" id="topSearch"/>
+    </div>
+    <div class="topnav-right">
+      <div class="user-chip-wrap">
+        <div class="user-chip" id="userChipBtn">
+          <div class="user-meta">
+            <span class="user-meta-label" data-user-faculty>Facultad de Ciencias Jurídicas y Políticas</span>
+            <span class="user-meta-name" id="topUserName" data-user-name></span>
+          </div>
+          <div class="user-avatar" id="topAvatar" data-user-avatar></div>
+        </div>
+        <div class="user-dropdown" id="userDropdown">
+          <div class="dropdown-header">
+            <div class="d-name" id="dropName" data-user-name></div>
+            <div class="d-role" id="dropRole" data-user-role></div>
+          </div>
+          <a class="dropdown-item" href="perfil.html">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
+            Mi Perfil
+          </a>
+          <a class="dropdown-item" href="historial.html">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M12 22a10 10 0 100-20 10 10 0 000 20z"/><path d="M12 8v4l3 3"/></svg>
+            Historial
+          </a>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item danger" id="dropLogout">
+            <svg fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+            Cerrar sesión
+          </div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <div class="content">
+
+    <div class="page-header">
+      <div>
+        <h1 class="page-title">Feed de actividad</h1>
+        <p class="page-subtitle">Lo que está pasando en la comunidad DUNAB</p>
+      </div>
+    </div>
+
+    <div class="feed-layout">
+
+      <!-- ── COLUMNA PRINCIPAL ── -->
+      <div>
+
+        <!-- Composer -->
+        <div class="composer-card" id="composerCard">
+          <div class="composer-header">
+            <div class="composer-avatar" id="composerAvatar">U</div>
+            <textarea
+              class="composer-input"
+              id="composerInput"
+              placeholder="¿Qué quieres compartir con la comunidad?"
+              maxlength="280"
+              oninput="onComposerInput()"
+            ></textarea>
+          </div>
+          <div class="composer-footer">
+            <span class="composer-count" id="composerCount">0 / 280</span>
+            <button class="btn-publicar" id="btnPublicar" disabled onclick="publicar()">Publicar</button>
+          </div>
+        </div>
+
+        <!-- Polling indicator + Tabs -->
+        <div class="polling-indicator">
+          <span class="polling-dot"></span>
+          <span id="lastUpdate">Actualizando…</span>
+        </div>
+
+        <div class="feed-tabs" id="feedTabs">
+          <button class="feed-tab active" data-tipo="" onclick="setFiltro(this, '')">Todos</button>
+          <button class="feed-tab" data-tipo="INSCRIPCION" onclick="setFiltro(this,'INSCRIPCION')">📅 Inscripciones</button>
+          <button class="feed-tab" data-tipo="LOGRO" onclick="setFiltro(this,'LOGRO')">🏅 Logros</button>
+          <button class="feed-tab" data-tipo="HITO" onclick="setFiltro(this,'HITO')">🎯 Hitos</button>
+          <button class="feed-tab" data-tipo="PUBLICACION" onclick="setFiltro(this,'PUBLICACION')">💬 Publicaciones</button>
+        </div>
+
+        <!-- Lista del feed -->
+        <div class="feed-list" id="feedList">
+          <div class="feed-empty"><span class="empty-icon">⏳</span>Cargando feed…</div>
+        </div>
+
+        <button class="btn-load-more" id="btnLoadMore" onclick="loadMore()" style="display:none">
+          Cargar más
+        </button>
+
+      </div>
+
+      <!-- ── SIDEBAR DERECHO ── -->
+      <div>
+        <div class="feed-stats-card">
+          <div class="feed-stats-title">Actividad reciente</div>
+          <div class="feed-stat-row">
+            <span class="feed-stat-label">📅 Inscripciones hoy</span>
+            <span class="feed-stat-val" id="statInscHoy">—</span>
+          </div>
+          <div class="feed-stat-row">
+            <span class="feed-stat-label">🏅 Logros desbloqueados</span>
+            <span class="feed-stat-val" id="statLogros">—</span>
+          </div>
+          <div class="feed-stat-row">
+            <span class="feed-stat-label">🎯 Hitos alcanzados</span>
+            <span class="feed-stat-val" id="statHitos">—</span>
+          </div>
+          <div class="feed-stat-row">
+            <span class="feed-stat-label">💬 Publicaciones</span>
+            <span class="feed-stat-val" id="statPubs">—</span>
+          </div>
+        </div>
+
+        <div class="feed-stats-card">
+          <div class="feed-stats-title">Información</div>
+          <p style="font-size:13px;color:var(--text-muted);line-height:1.6;margin:0">
+            El feed se actualiza automáticamente cada 30 segundos con la actividad más reciente de todos los estudiantes DUNAB.
+          </p>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- ════════════ TOAST ════════════ -->
+<div class="toast-container" id="toastContainer"></div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/theme.js"></script>
+<script>
+/* ═══════════════════════════════════════════════════════
+   FEED — lógica principal
+   ═══════════════════════════════════════════════════════ */
+
+// Estado
+let currentTipo  = '';
+let currentPage  = 0;
+let totalPages   = 1;
+let pollingTimer = null;
+const meId = (() => { try { return JSON.parse(localStorage.getItem('dunab_user')||'{}').id; } catch(e){ return null; } })();
+
+/* ── Toast ─────────────────────────────────────────────── */
+function showToast(msg, type = 'info') {
+  const c = document.getElementById('toastContainer');
+  if (!c) return;
+  const t = document.createElement('div');
+  t.className = 'toast toast-' + type;
+  t.textContent = msg;
+  c.appendChild(t);
+  requestAnimationFrame(() => t.classList.add('show'));
+  setTimeout(() => { t.classList.remove('show'); setTimeout(() => t.remove(), 300); }, 3000);
+}
+
+/* ── Formato de tiempo relativo ────────────────────────── */
+function timeAgo(isoStr) {
+  const d = new Date(isoStr);
+  const diff = Math.floor((Date.now() - d.getTime()) / 1000);
+  if (diff < 60)  return 'ahora mismo';
+  if (diff < 3600) return Math.floor(diff/60) + ' min';
+  if (diff < 86400) return Math.floor(diff/3600) + 'h';
+  return d.toLocaleDateString('es-CO', { day:'numeric', month:'short' });
+}
+
+/* ── Iconos y chips ────────────────────────────────────── */
+const TIPO_ICON  = { INSCRIPCION:'📅', LOGRO:'🏅', HITO:'🎯', PUBLICACION:'💬' };
+const TIPO_LABEL = { INSCRIPCION:'Inscripción', LOGRO:'Logro', HITO:'Hito', PUBLICACION:'Publicación' };
+
+/* ── Renderizar un evento ──────────────────────────────── */
+function renderCard(ev) {
+  const isOwn   = ev.usuarioId === meId;
+  const icon    = TIPO_ICON[ev.tipo]  || '📌';
+  const label   = TIPO_LABEL[ev.tipo] || ev.tipo;
+  const avatar  = ev.usuarioAvatar || '?';
+  const nombre  = ev.usuarioNombre || 'Usuario';
+  const codigo  = ev.usuarioCodigo ? `<span style="color:var(--text-muted);font-size:12px">${ev.usuarioCodigo}</span>` : '';
+
+  // Extra info según tipo
+  let extra = '';
+  if (ev.tipo === 'PUBLICACION' && ev.cuerpo) {
+    extra = `<div class="feed-cuerpo">${escHtml(ev.cuerpo)}</div>`;
+  } else if (ev.tipo === 'INSCRIPCION' && ev.metadata?.nombre) {
+    extra = `<div class="feed-meta-enc">📍 ${escHtml(ev.metadata.lugar||'')} · ${escHtml(ev.metadata.nombre)}</div>`;
+  } else if (ev.tipo === 'LOGRO' && ev.metadata?.emoji) {
+    extra = `<div class="feed-meta-enc">${ev.metadata.emoji} ${escHtml(ev.metadata.logroCodigo||'')}</div>`;
+  }
+
+  const delBtn = isOwn
+    ? `<button class="btn-del-feed" title="Eliminar" onclick="eliminar(${ev.id}, this)">✕</button>`
+    : '';
+
+  return `
+    <div class="feed-card" data-id="${ev.id}">
+      <div class="feed-av tipo-${ev.tipo}">${escHtml(avatar)}</div>
+      <div class="feed-body">
+        <div class="feed-meta">
+          <span class="feed-name">${escHtml(nombre)}</span>
+          ${codigo}
+          <span class="feed-chip chip-${ev.tipo}">${icon} ${label}</span>
+          <span class="feed-time">${timeAgo(ev.creadoEn)}</span>
+        </div>
+        ${ev.mensaje ? `<div class="feed-text">${escHtml(ev.mensaje)}</div>` : ''}
+        ${extra}
+      </div>
+      ${delBtn}
+    </div>`;
+}
+
+function escHtml(s) {
+  return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* ── Cargar feed ───────────────────────────────────────── */
+async function loadFeed(reset = false) {
+  if (reset) {
+    currentPage = 0;
+    totalPages  = 1;
+    document.getElementById('feedList').innerHTML =
+      '<div class="feed-empty"><span class="empty-icon">⏳</span>Cargando…</div>';
+  }
+
+  try {
+    const params = new URLSearchParams({ page: currentPage });
+    if (currentTipo) params.set('tipo', currentTipo);
+    const data = await apiFetch(`/feed?${params}`);
+
+    totalPages = data.totalPages;
+    const events = data.content || [];
+
+    const list = document.getElementById('feedList');
+
+    if (reset) {
+      if (events.length === 0) {
+        list.innerHTML = '<div class="feed-empty"><span class="empty-icon">🌿</span>No hay actividad todavía. ¡Sé el primero en publicar!</div>';
+      } else {
+        list.innerHTML = events.map(renderCard).join('');
+      }
+    } else {
+      // Load more: agregar al final
+      events.forEach(ev => list.insertAdjacentHTML('beforeend', renderCard(ev)));
+    }
+
+    // Botón load more
+    const btn = document.getElementById('btnLoadMore');
+    btn.style.display = (currentPage + 1 < totalPages) ? 'block' : 'none';
+
+    // Actualizar hora
+    document.getElementById('lastUpdate').textContent =
+      'Actualizado ' + new Date().toLocaleTimeString('es-CO', { hour:'2-digit', minute:'2-digit' });
+
+    // Actualizar stats del sidebar
+    actualizarStats(data.content || []);
+
+  } catch (err) {
+    console.error(err);
+    if (reset) {
+      document.getElementById('feedList').innerHTML =
+        `<div class="feed-empty">
+          <span class="empty-icon">⚠️</span>
+          No se pudo cargar el feed. Verifica que el backend esté activo.
+          <br><br>
+          <button onclick="loadFeed(true)" style="
+            margin-top:4px;padding:8px 20px;background:var(--accent);color:#fff;
+            border:none;border-radius:var(--radius-md);font:600 13px var(--font);
+            cursor:pointer;opacity:.9;
+          ">🔄 Reintentar</button>
+        </div>`;
+    }
+  }
+}
+
+/* ── Estadísticas del sidebar ──────────────────────────── */
+function actualizarStats(events) {
+  // Solo contamos el primer batch (ya es representativo)
+  const today = new Date().toDateString();
+  const counts = { INSCRIPCION: 0, LOGRO: 0, HITO: 0, PUBLICACION: 0 };
+  events.forEach(ev => {
+    if (ev.tipo === 'INSCRIPCION' && new Date(ev.creadoEn).toDateString() === today) counts.INSCRIPCION++;
+    else if (ev.tipo === 'LOGRO') counts.LOGRO++;
+    else if (ev.tipo === 'HITO')  counts.HITO++;
+    else if (ev.tipo === 'PUBLICACION') counts.PUBLICACION++;
+  });
+  document.getElementById('statInscHoy').textContent = counts.INSCRIPCION;
+  document.getElementById('statLogros').textContent   = counts.LOGRO;
+  document.getElementById('statHitos').textContent    = counts.HITO;
+  document.getElementById('statPubs').textContent     = counts.PUBLICACION;
+}
+
+/* ── Filtros ───────────────────────────────────────────── */
+function setFiltro(btn, tipo) {
+  currentTipo = tipo;
+  document.querySelectorAll('.feed-tab').forEach(t => t.classList.remove('active'));
+  btn.classList.add('active');
+  loadFeed(true);
+}
+
+/* ── Load more ─────────────────────────────────────────── */
+function loadMore() {
+  if (currentPage + 1 < totalPages) {
+    currentPage++;
+    loadFeed(false);
+  }
+}
+
+/* ── Composer ──────────────────────────────────────────── */
+function onComposerInput() {
+  const input = document.getElementById('composerInput');
+  const count = document.getElementById('composerCount');
+  const btn   = document.getElementById('btnPublicar');
+  const len   = input.value.length;
+  count.textContent = len + ' / 280';
+  count.className   = 'composer-count' + (len >= 270 ? ' over' : len >= 240 ? ' near' : '');
+  btn.disabled      = len === 0 || len > 280;
+}
+
+async function publicar() {
+  const input = document.getElementById('composerInput');
+  const cuerpo = input.value.trim();
+  if (!cuerpo) return;
+
+  const btn = document.getElementById('btnPublicar');
+  btn.disabled = true;
+  btn.textContent = 'Publicando…';
+
+  try {
+    await apiFetch('/feed/publicar', {
+      method: 'POST',
+      body: JSON.stringify({ cuerpo })
+    });
+
+    input.value = '';
+    onComposerInput();
+    showToast('¡Publicado! 🎉', 'success');
+    // Recargar el feed para mostrar la nueva publicación al tope
+    await loadFeed(true);
+  } catch (err) {
+    console.error(err);
+    showToast('Error al publicar: ' + (err.message || '¿Iniciaste sesión?'), 'error');
+  } finally {
+    btn.disabled    = false;
+    btn.textContent = 'Publicar';
+  }
+}
+
+/* ── Eliminar publicación ──────────────────────────────── */
+async function eliminar(id, btnEl) {
+  if (!confirm('¿Eliminar esta publicación?')) return;
+  try {
+    await apiFetch(`/feed/${id}`, { method: 'DELETE' });
+    const card = btnEl.closest('.feed-card');
+    card.style.transition = 'opacity .3s';
+    card.style.opacity = '0';
+    setTimeout(() => card.remove(), 300);
+    showToast('Publicación eliminada.', 'info');
+  } catch(err) {
+    showToast('No se pudo eliminar.', 'error');
+  }
+}
+
+/* ── Polling ───────────────────────────────────────────── */
+function iniciarPolling() {
+  clearInterval(pollingTimer);
+  pollingTimer = setInterval(() => {
+    // Solo recargamos si estamos en la primera página (no interrumpir al usuario leyendo más)
+    if (currentPage === 0) loadFeed(true);
+  }, 30_000);
+}
+
+/* ── Init ──────────────────────────────────────────────── */
+document.addEventListener('DOMContentLoaded', () => {
+  // Verificar auth
+  if (!Auth.isLoggedIn()) { window.location.href = 'login.html'; return; }
+
+  const user = Auth.getUser();
+
+  // Avatar del composer
+  const av = document.getElementById('composerAvatar');
+  if (av && user?.nombre) {
+    av.textContent = user.nombre.trim().charAt(0).toUpperCase();
+  }
+
+  // Dropdown toggle del topnav
+  const chip = document.getElementById('userChipBtn');
+  const drop = document.getElementById('userDropdown');
+  if (chip && drop) {
+    chip.addEventListener('click', e => { e.stopPropagation(); drop.classList.toggle('open'); });
+    document.addEventListener('click', () => drop.classList.remove('open'));
+  }
+
+  // Cargar feed inicial y arrancar polling
+  loadFeed(true);
+  iniciarPolling();
+});
+</script>
+
+</body>
+</html>
