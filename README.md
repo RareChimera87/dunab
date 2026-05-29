@@ -13,24 +13,7 @@ DUNAB/
 └── scripts/      Scripts de inicio/detención para Windows
 ```
 
-## Cómo correr local
 
-1. Asegúrate de tener Java 17, Docker Desktop y Maven (o usa el wrapper incluido).
-2. Desde la raíz del proyecto, ejecuta:
-
-```
-scripts\iniciar.bat
-```
-
-Esto levanta PostgreSQL vía Docker y arranca Spring Boot en `http://localhost:8080`.
-
-## Cómo abrir el frontend
-
-```
-scripts\abrir-frontend.bat
-```
-
-Abre `frontend/login.html` en el navegador predeterminado.
 
 ## Login inicial
 
