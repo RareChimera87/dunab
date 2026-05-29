@@ -74,6 +74,10 @@ infra/postgres-data/
 *.log
 logs/
 
+# ── Carpetas excluidas del repo ───────────────────────────────
+docs/
+scripts/
+
 # ── Temporales ────────────────────────────────────────────────
 test_tmp/
 *.tmp
